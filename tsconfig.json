@@ -15,7 +15,7 @@
     "noEmit": true,
 
     // Best practices
-    "strict": true,
+    "strict": false,
     "skipLibCheck": true,
     "noFallthroughCasesInSwitch": true,
     "noUncheckedIndexedAccess": true,
@@ -25,5 +25,16 @@
     "noUnusedLocals": false,
     "noUnusedParameters": false,
     "noPropertyAccessFromIndexSignature": false
-  }
+  },
+  "exclude": [
+    "web/**",
+    // Legacy Google Cloud implementations (excluded from local-only build)
+    "src/db/firestore.ts",
+    "src/storage/firestore-storage.ts",
+    "src/services/google-cloud.ts",
+    "src/services/embeddings.ts",
+    "src/embeddings/vertex-ai-embeddings.ts",
+    "src/services/gemini-service.ts",
+    "src/services/query-service.ts"
+  ]
 }

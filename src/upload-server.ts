@@ -1,16 +1,16 @@
 /**
- * HTTP Upload Server for Document Ingestion
+ * HTTP Upload Server for Document Ingestion with Flexible Backend
  */
 
 import { Elysia, t } from "elysia";
-import { initializeGoogleCloud } from "./services/google-cloud.js";
-import { getDatabaseService } from "./db/firestore.js";
+import {
+  getStorageService,
+  getConfig,
+  healthCheck,
+} from "./services/service-provider.js";
 import { getDocumentProcessor } from "./processing/document-processor.js";
 import type { MimeType } from "./types.js";
 import cors from "@elysiajs/cors";
-
-// Initialize Google Cloud services
-await initializeGoogleCloud();
 
 const app = new Elysia()
   .use(cors({ origin: "*" }))
@@ -23,28 +23,90 @@ const app = new Elysia()
     };
   })
 
-  // Health check endpoint
-  .get("/health", () => ({ status: "ok", timestamp: new Date().toISOString() }))
+  // Health check endpoint with service status
+  .get(
+    "/health",
+    async () => {
+      const config = getConfig();
+      const health = await healthCheck();
+      const uptime = process.uptime();
+
+      return {
+        status: health.overall ? "healthy" : "degraded",
+        storage: {
+          provider: config.storage.name,
+          status: health.storage,
+        },
+        embeddings: {
+          provider: config.embeddings.name,
+          status: health.embeddings,
+        },
+        uptime,
+        timestamp: new Date().toISOString(),
+      };
+    },
+    {
+      response: t.Object({
+        status: t.Union([t.Literal("healthy"), t.Literal("degraded")]),
+        storage: t.Object({ provider: t.String(), status: t.Boolean() }),
+        embeddings: t.Object({ provider: t.String(), status: t.Boolean() }),
+        uptime: t.Number(),
+        timestamp: t.String(),
+      }),
+    }
+  )
 
   // List all documentation sets
-  .get("/sets", async () => {
-    const databaseService = getDatabaseService();
-    const sets = await databaseService.listDocumentSets();
-    return { sets };
-  })
+  .get(
+    "/sets",
+    async () => {
+      const storageService = getStorageService();
+      const sets = await storageService.listDocumentSets();
+      return { sets };
+    },
+    {
+      response: t.Object({
+        sets: t.Array(
+          t.Object({
+            id: t.String(),
+            name: t.String(),
+            description: t.String(),
+            created_at: t.Any(),
+            document_count: t.Number(),
+          })
+        ),
+      }),
+    }
+  )
 
   // Create a new documentation set
   .post(
     "/sets",
-    async ({ body }) => {
-      const databaseService = getDatabaseService();
-      const result = await databaseService.createDocumentSet(body);
-      return result;
+    async ({ body, set }) => {
+      try {
+        const storageService = getStorageService();
+        const result = await storageService.createDocumentSet(
+          body.name,
+          body.description
+        );
+        return result;
+      } catch (error) {
+        console.error("Error creating document set:", error);
+        set.status = 500;
+        return { error: "Failed to create document set" };
+      }
     },
     {
       body: t.Object({
         name: t.String({ minLength: 1 }),
         description: t.Optional(t.String()),
+      }),
+      response: t.Object({
+        id: t.String(),
+        name: t.String(),
+        description: t.String(),
+        created_at: t.Any(),
+        document_count: t.Number(),
       }),
     }
   )
@@ -53,8 +115,8 @@ const app = new Elysia()
   .get(
     "/sets/:setId",
     async ({ params, set }) => {
-      const databaseService = getDatabaseService();
-      const docSet = await databaseService.getDocumentSet(params.setId);
+      const storageService = getStorageService();
+      const docSet = await storageService.getDocumentSet(params.setId);
 
       if (!docSet) {
         set.status = 404;
@@ -67,6 +129,16 @@ const app = new Elysia()
       params: t.Object({
         setId: t.String({ minLength: 1 }),
       }),
+      response: t.Union([
+        t.Object({
+          id: t.String(),
+          name: t.String(),
+          description: t.String(),
+          created_at: t.Any(),
+          document_count: t.Number(),
+        }),
+        t.Object({ error: t.String() }),
+      ]),
     }
   )
 
@@ -74,22 +146,26 @@ const app = new Elysia()
   .get(
     "/sets/:setId/documents",
     async ({ params, set }) => {
-      const databaseService = getDatabaseService();
+      const storageService = getStorageService();
 
       // Verify the documentation set exists
-      const docSet = await databaseService.getDocumentSet(params.setId);
+      const docSet = await storageService.getDocumentSet(params.setId);
       if (!docSet) {
         set.status = 404;
         return { error: "Documentation set not found" };
       }
 
-      const documents = await databaseService.getDocumentsBySetId(params.setId);
+      const documents = await storageService.getDocumentSet(params.setId);
       return { documents };
     },
     {
       params: t.Object({
         setId: t.String({ minLength: 1 }),
       }),
+      response: t.Union([
+        t.Object({ documents: t.Any() }),
+        t.Object({ error: t.String() }),
+      ]),
     }
   )
 
@@ -97,17 +173,17 @@ const app = new Elysia()
   .delete(
     "/sets/:setId/documents/:documentId",
     async ({ params, set }) => {
-      const databaseService = getDatabaseService();
+      const storageService = getStorageService();
 
       // Verify the documentation set exists
-      const docSet = await databaseService.getDocumentSet(params.setId);
+      const docSet = await storageService.getDocumentSet(params.setId);
       if (!docSet) {
         set.status = 404;
         return { error: "Documentation set not found" };
       }
 
       try {
-        await databaseService.deleteDocument(params.documentId);
+        await storageService.deleteDocument(params.setId, params.documentId);
         return { message: "Document deleted successfully" };
       } catch (error) {
         console.error("Error deleting document:", error);
@@ -120,6 +196,10 @@ const app = new Elysia()
         setId: t.String({ minLength: 1 }),
         documentId: t.String({ minLength: 1 }),
       }),
+      response: t.Union([
+        t.Object({ message: t.String() }),
+        t.Object({ error: t.String() }),
+      ]),
     }
   )
 
@@ -129,12 +209,20 @@ const app = new Elysia()
     async ({ params, body, set }) => {
       try {
         const { setId } = params;
-        const { files } = body;
+        // Narrow the body type to include files in environments without DOM lib
+        type UploadedFile = {
+          readonly name: string;
+          readonly type: string;
+          readonly size: number;
+          arrayBuffer: () => Promise<ArrayBuffer>;
+        };
+        type UploadBody = { files: UploadedFile | UploadedFile[] };
+        const { files } = body as unknown as UploadBody;
         const documentProcessor = getDocumentProcessor();
-        const databaseService = getDatabaseService();
+        const storageService = getStorageService();
 
         // Verify the documentation set exists
-        const docSet = await databaseService.getDocumentSet(setId);
+        const docSet = await storageService.getDocumentSet(setId);
         if (!docSet) {
           set.status = 404;
           return { error: "Documentation set not found" };
@@ -217,6 +305,19 @@ const app = new Elysia()
       body: t.Object({
         files: t.Files(),
       }),
+      response: t.Union([
+        t.Object({
+          message: t.String(),
+          results: t.Array(
+            t.Object({
+              filename: t.String(),
+              documentId: t.String(),
+              chunksCreated: t.Number(),
+            })
+          ),
+        }),
+        t.Object({ error: t.String() }),
+      ]),
     }
   )
 

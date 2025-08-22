@@ -1,14 +1,17 @@
 /**
- * Document processing pipeline
+ * Document processing pipeline with flexible backend support
  */
 
 import { parseText } from "../parsers/text.js";
 import { parseHtml } from "../parsers/html.js";
 import { parsePdf } from "../parsers/pdf.js";
 import { chunkText } from "../ingest/chunker.js";
-import { getEmbeddingService } from "../services/embeddings.js";
-import { getDatabaseService } from "../db/firestore.js";
-import { withRetry, withBatchRetry } from "../utils/retry.js";
+import {
+  getStorageService,
+  getEmbeddingService,
+  getConfig,
+} from "../services/service-provider.js";
+import { withRetry } from "../utils/retry.js";
 import type {
   UUID,
   DocumentMeta,
@@ -60,7 +63,8 @@ export const createDocumentProcessor = (): DocumentProcessor => {
     input: ProcessDocumentInput
   ): Promise<ProcessDocumentOutput> => {
     const embeddingService = getEmbeddingService();
-    const databaseService = getDatabaseService();
+    const storageService = getStorageService();
+    const config = getConfig();
 
     console.log(`Processing document: ${input.filename} (${input.mimeType})`);
 
@@ -80,59 +84,79 @@ export const createDocumentProcessor = (): DocumentProcessor => {
     };
 
     // Step 3: Chunk the text (optimize for large documents)
-    const chunkSize = text.length > 100000 ? 1500 : 1000; // Larger chunks for very large documents
-    const overlap = Math.floor(chunkSize * 0.1); // 10% overlap
-    
+    const chunkSize =
+      text.length > 100000
+        ? config.chunking.maxSize
+        : config.chunking.defaultSize;
+    const overlap = config.chunking.overlap;
+
     const chunkResult = chunkText(
       { chunkSize, overlap },
       { setId: input.setId, documentId, text }
     );
-    console.log(`Created ${chunkResult.chunks.length} chunks (${chunkSize} chars per chunk)`);
+    console.log(
+      `Created ${chunkResult.chunks.length} chunks (${chunkSize} chars per chunk)`
+    );
 
-    // Step 4: Store document and chunks first
-    await databaseService.addDocument(documentMeta);
-    await databaseService.addChunks([...chunkResult.chunks]);
-
-    // Step 5: Generate embeddings with retry and batching for large documents
+    // Step 4: Generate embeddings with retry and batching, then store documents with embeddings
     const chunks = [...chunkResult.chunks];
-    const embeddingRecords: EmbeddingRecord[] = [];
-    
-    const batchSize = chunks.length > 100 ? 20 : 50; // Smaller batches for very large documents
+    const storedCount: number[] = [];
+
+    interface EmbeddingBatchOption {
+      readonly maxBatchSize?: number;
+    }
+    const embeddingOpts = config.embeddings
+      .options as Partial<EmbeddingBatchOption>;
+    const providerMaxBatch =
+      typeof embeddingOpts.maxBatchSize === "number"
+        ? embeddingOpts.maxBatchSize
+        : 50;
+    const batchSize = Math.min(providerMaxBatch, chunks.length > 100 ? 20 : 50);
     console.log(`Processing embeddings in batches of ${batchSize}`);
 
     for (let i = 0; i < chunks.length; i += batchSize) {
       const batch = chunks.slice(i, i + batchSize);
       const chunkTexts = batch.map((chunk) => chunk.text);
-      
-      console.log(`Processing embedding batch ${Math.floor(i/batchSize) + 1}/${Math.ceil(chunks.length/batchSize)}`);
-      
+
+      console.log(
+        `Processing embedding batch ${
+          Math.floor(i / batchSize) + 1
+        }/${Math.ceil(chunks.length / batchSize)}`
+      );
+
       const embeddingResponse = await withRetry(
         () => embeddingService.generateEmbeddings({ texts: chunkTexts }),
         { maxAttempts: 5, baseDelayMs: 2000, maxDelayMs: 60000 }
       );
 
-      const batchRecords: EmbeddingRecord[] = batch.map((chunk, index) => ({
-        chunkId: chunk.id,
-        setId: input.setId,
-        dimension: embeddingResponse.dimensions,
-        vector: embeddingResponse.embeddings[index] || [],
+      // Prepare storage documents with embeddings
+      const documents = batch.map((chunk, index) => ({
+        id: chunk.id,
+        content: chunk.text,
+        embedding: embeddingResponse.embeddings[index] || [],
+        metadata: {
+          source_file: input.filename,
+          document_type: "unknown",
+          keywords: [],
+          chunk_index: chunk.ordinal,
+        },
       }));
 
-      embeddingRecords.push(...batchRecords);
-
-      // Store embeddings in smaller batches to avoid timeouts
+      // Store documents + embeddings together
       await withRetry(
-        () => databaseService.addEmbeddings(batchRecords),
+        () => storageService.addDocuments(input.setId, documents),
         { maxAttempts: 3, baseDelayMs: 1000 }
       );
+      storedCount.push(documents.length);
 
       // Brief pause between batches to be respectful to APIs
       if (i + batchSize < chunks.length) {
-        await new Promise(resolve => setTimeout(resolve, 500));
+        await new Promise((resolve) => setTimeout(resolve, 500));
       }
     }
 
-    console.log(`Generated and stored ${embeddingRecords.length} embeddings`);
+    const totalStored = storedCount.reduce((a, b) => a + b, 0);
+    console.log(`Generated and stored ${totalStored} embedded chunks`);
 
     console.log(`Successfully processed document ${input.filename}`);
 

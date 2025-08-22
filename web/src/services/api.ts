@@ -1,4 +1,4 @@
-import type { DocumentSet } from "@/types";
+import type { DocumentSet, Document } from "@/types";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -7,15 +7,17 @@ interface CreateDocumentSetRequest {
   description?: string;
 }
 
-interface CreateDocumentSetResponse {
+// Server payload types (snake_case)
+interface ServerDocumentSet {
   id: string;
   name: string;
-  description?: string;
-  createdAt: string;
+  description: string;
+  created_at: unknown;
+  document_count: number;
 }
 
 interface ListDocumentSetsResponse {
-  sets: DocumentSet[];
+  sets: ServerDocumentSet[];
 }
 
 interface UploadDocumentsResponse {
@@ -26,6 +28,29 @@ interface UploadDocumentsResponse {
     chunksCreated: number;
   }>;
 }
+
+const toIsoString = (value: unknown): string => {
+  if (typeof value === "string") return value;
+  if (value instanceof Date) return value.toISOString();
+  if (typeof value === "number") return new Date(value).toISOString();
+  if (typeof value === "object" && value !== null) {
+    // Attempt to parse date-like objects
+    const d = new Date(
+      String((value as { toString?: () => string }).toString?.() ?? "")
+    );
+    if (!Number.isNaN(d.getTime())) return d.toISOString();
+  }
+  return new Date().toISOString();
+};
+
+const mapServerSetToClient = (s: ServerDocumentSet): DocumentSet => ({
+  id: s.id,
+  name: s.name,
+  description: s.description || "",
+  createdAt: toIsoString(s.created_at),
+  userId: "", // not provided by backend
+  documentCount: s.document_count ?? 0,
+});
 
 class ApiService {
   private async fetchWithErrorHandling<T>(
@@ -72,7 +97,7 @@ class ApiService {
     try {
       const response =
         await this.fetchWithErrorHandling<ListDocumentSetsResponse>("/sets");
-      return response.sets;
+      return response.sets.map(mapServerSetToClient);
     } catch (error) {
       // Return mock data for development when API is unavailable
       console.warn("API unavailable, using mock data:", error);
@@ -81,7 +106,11 @@ class ApiService {
   }
 
   async getDocumentSet(setId: string): Promise<DocumentSet> {
-    return this.fetchWithErrorHandling<DocumentSet>(`/sets/${setId}`);
+    const payload = await this.fetchWithErrorHandling<
+      ServerDocumentSet | { error: string }
+    >(`/sets/${setId}`);
+    if ("error" in payload) throw new Error(payload.error);
+    return mapServerSetToClient(payload);
   }
 
   async getDocuments(setId: string): Promise<Document[]> {
@@ -89,8 +118,40 @@ class ApiService {
     if (!response.ok) {
       throw new Error(`Failed to fetch documents: ${response.statusText}`);
     }
-    const data = await response.json();
-    return data as Document[];
+    type ServerDocumentItem = {
+      readonly id?: string;
+      readonly filename?: string;
+      readonly source_file?: string;
+      readonly mime?: string;
+      readonly mime_type?: string;
+      readonly sizeBytes?: number;
+      readonly size_bytes?: number;
+      readonly createdAt?: string | number | Date;
+      readonly created_at?: string | number | Date;
+    };
+    type ServerDocumentsResponse = {
+      readonly documents?: ServerDocumentItem[];
+    };
+    const data: unknown = await response.json();
+    const hasDocuments = (x: unknown): x is ServerDocumentsResponse => {
+      return (
+        typeof x === "object" &&
+        x !== null &&
+        Array.isArray((x as { documents?: unknown }).documents)
+      );
+    };
+    if (hasDocuments(data)) {
+      const docs: ServerDocumentItem[] = data.documents ?? [];
+      return docs.map((d) => ({
+        id: String(d.id ?? ""),
+        setId,
+        filename: String(d.filename ?? d.source_file ?? "unknown"),
+        mime: String(d.mime ?? d.mime_type ?? "text/plain"),
+        sizeBytes: Number(d.sizeBytes ?? d.size_bytes ?? 0),
+        createdAt: toIsoString(d.createdAt ?? d.created_at ?? Date.now()),
+      }));
+    }
+    return [];
   }
 
   async deleteDocument(setId: string, documentId: string): Promise<void> {
@@ -107,11 +168,15 @@ class ApiService {
 
   async createDocumentSet(
     data: CreateDocumentSetRequest
-  ): Promise<CreateDocumentSetResponse> {
-    return this.fetchWithErrorHandling<CreateDocumentSetResponse>("/sets", {
-      method: "POST",
-      body: JSON.stringify(data),
-    });
+  ): Promise<DocumentSet> {
+    const payload = await this.fetchWithErrorHandling<ServerDocumentSet>(
+      "/sets",
+      {
+        method: "POST",
+        body: JSON.stringify(data),
+      }
+    );
+    return mapServerSetToClient(payload);
   }
 
   async uploadDocuments(
@@ -147,8 +212,4 @@ class ApiService {
 }
 
 export const apiService = new ApiService();
-export type {
-  CreateDocumentSetRequest,
-  CreateDocumentSetResponse,
-  UploadDocumentsResponse,
-};
+export type { UploadDocumentsResponse };

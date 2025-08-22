@@ -1,4 +1,250 @@
-# Documentation MCP Server
+# Documentation MCP Server - Flexible Backend
+
+A Model Context Protocol (MCP) server that provides AI assistants with the ability to search and query documentation. Now supports **flexible backend configurations** to meet different privacy and infrastructure requirements.
+
+## 🆕 What's New - Flexible Backend Architecture
+
+This version introduces a complete backend abstraction layer that allows you to choose your preferred technology stack:
+
+### **Storage Options**
+- **Firestore** - Cloud-native, managed by Google
+- **ChromaDB** - Open-source vector database
+
+### **Embedding Options**  
+- **Vertex AI** - Google's cloud embedding service
+- **Xenova/Transformers** - Local, privacy-focused embeddings
+
+### Provider registry and provider-agnostic configuration (New)
+
+We now use a plugin-style provider registry with auto-registration. Configuration no longer references specific providers in the schema; instead you specify:
+
+```bash
+# Storage
+STORAGE_NAME=chroma
+STORAGE_OPTIONS={"url":"http://localhost:8000"}
+
+# Embeddings
+EMBEDDINGS_NAME=xenova
+EMBEDDINGS_OPTIONS={"model":"Xenova/all-MiniLM-L6-v2","maxBatchSize":50}
+```
+
+Notes:
+- Providers self-register via `src/*/providers/index.ts` side-effect imports.
+- Adding a provider is as simple as adding a new file that calls `register*Provider()`.
+- Old variables like `STORAGE_PROVIDER`, `EMBEDDING_PROVIDER`, `CHROMA_URL`, `XENOVA_MODEL` are supported for backward-compat in parsing, but are deprecated.
+
+## 🏗️ Architecture
+
+```
+┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
+│   MCP Client    │    │   HTTP Upload    │    │   Web UI        │
+│   (Claude)      │    │   Server         │    │   (Optional)    │
+└─────────────────┘    └──────────────────┘    └─────────────────┘
+         │                        │                        │
+         └────────────────────────┼────────────────────────┘
+                                  │
+                     ┌─────────────────────┐
+                     │  Service Provider   │
+                     │  (Abstraction)      │
+                     └─────────────────────┘
+                              │
+                 ┌────────────┴────────────┐
+                 │                         │
+        ┌────────────────┐        ┌───────────────┐
+        │  Storage Layer │        │ Embedding     │
+        │                │        │ Layer         │
+        ├────────────────┤        ├───────────────┤
+        │ • Firestore    │        │ • Vertex AI   │
+        │ • ChromaDB     │        │ • Xenova      │
+        │                │        │               │
+        └────────────────┘        └───────────────┘
+```
+
+## 🚀 Quick Start
+
+### Privacy-Focused Setup (Local Only)
+```bash
+# Clone and install
+git clone <repository>
+cd documentation-mcp
+bun install
+
+# Configure for local processing
+cp .env.example .env
+# Edit .env with provider-agnostic config:
+STORAGE_NAME=chroma
+STORAGE_OPTIONS={"url":"http://localhost:8000"}
+EMBEDDINGS_NAME=xenova
+EMBEDDINGS_OPTIONS={"model":"Xenova/all-MiniLM-L6-v2","maxBatchSize":50}
+
+# Start servers
+bun run upload-server:dev  # Upload server on :3001
+bun run mcp-server        # MCP server for Claude
+```
+
+### Cloud-Optimized Setup (Google Cloud)
+```bash
+# Install and configure
+bun install
+cp .env.example .env
+
+# Edit .env:
+STORAGE_PROVIDER=firestore
+EMBEDDING_PROVIDER=vertex-ai
+GOOGLE_CLOUD_PROJECT_ID=your-project-id
+EMBEDDING_MODEL=text-embedding-004
+
+# Authenticate with Google Cloud
+gcloud auth application-default login
+
+# Start servers
+bun run upload-server:dev
+bun run mcp-server
+```
+
+### Hybrid Setup (ChromaDB + Local Embeddings)
+```bash
+# Start ChromaDB
+docker run -p 8000:8000 chromadb/chroma
+
+# Configure app
+STORAGE_PROVIDER=chroma
+EMBEDDING_PROVIDER=xenova
+CHROMA_URL=http://localhost:8000
+XENOVA_MODEL=Xenova/all-MiniLM-L6-v2
+
+# Start app
+bun run upload-server:dev
+bun run mcp-server
+```
+
+## 📋 Configuration Options
+
+### Environment Variables
+
+| Variable | Options | Description |
+|----------|---------|-------------|
+| `STORAGE_PROVIDER` | `firestore` \| `chroma` | Choose your storage backend |
+| `EMBEDDING_PROVIDER` | `vertex-ai` \| `xenova` | Choose your embedding service |
+| `GOOGLE_CLOUD_PROJECT_ID` | string | Required for Firestore/Vertex AI |
+| `CHROMA_URL` | url | ChromaDB server URL |
+| `XENOVA_MODEL` | model | Hugging Face model for local embeddings |
+
+See `.env.example` for complete configuration options.
+
+## 🔧 Technology Stack Comparison
+
+| Feature | Firestore + Vertex AI | ChromaDB + Xenova |
+|---------|----------------------|-------------------|
+| **Privacy** | ❌ Cloud-based | ✅ Self-hosted |
+| **Performance** | ✅ Excellent | ✅ Good |
+| **Scalability** | ✅ Unlimited | ✅ High |
+| **Setup Complexity** | ⚠️ Medium | ⚠️ Medium |
+| **Cost** | 💰 Pay-per-use | 💰 Infrastructure |
+| **Offline Support** | ❌ No | ⚠️ Partial |
+
+## 🎯 Use Cases
+
+### **Enterprise/Production**
+→ **Firestore + Vertex AI**
+- Automatic scaling
+- Enterprise security
+- Managed infrastructure
+
+### **Privacy-Sensitive**
+→ **ChromaDB + Xenova** 
+- No external cloud dependencies
+- Complete data control
+- Works in air-gapped environments
+
+### **Development/Research**
+→ **ChromaDB + Xenova**
+- Easy experimentation
+- Good performance
+- Flexible deployment
+
+## 📁 Project Structure
+
+```
+src/
+├── config/
+│   └── app-config.ts          # Configuration management with Zod
+├── storage/
+│   ├── storage-interface.ts   # Common storage interface
+│   ├── firestore-storage.ts   # Firestore implementation  
+│   ├── chroma-storage.ts      # ChromaDB implementation
+│   └── storage-factory.ts     # Factory for storage services
+├── embeddings/
+│   ├── embedding-interface.ts # Common embedding interface
+│   ├── vertex-ai-embeddings.ts # Vertex AI implementation
+│   ├── xenova-embeddings.ts   # Xenova implementation
+│   └── embedding-factory.ts   # Factory for embedding services
+├── services/
+│   └── service-provider.ts    # Singleton service manager
+├── validation/
+│   └── api-schemas.ts         # Zod validation schemas
+└── processing/
+    └── document-processor.ts  # Updated to use abstractions
+```
+
+## 🔌 API Endpoints
+
+### Upload Server (Port 3001)
+- `GET /health` - Service health check with provider status
+- `GET /sets` - List documentation sets
+- `POST /sets` - Create documentation set
+- `GET /sets/:setId` - Get specific set
+- `GET /sets/:setId/documents` - List documents in set
+- `POST /sets/:setId/upload` - Upload documents
+- `DELETE /sets/:setId/documents/:docId` - Delete document
+
+### MCP Server (stdio)
+- `list_documentation_sets` - List available sets
+- `search_documentation` - Vector search within sets  
+- `ask_documentation` - AI-powered question answering
+
+## 🛠️ Development
+
+```bash
+# Install dependencies
+bun install
+
+# Development with file watching
+bun run dev              # Upload server with hot reload
+bun run web:dev         # Web UI development server
+
+# Type checking
+bun run typecheck
+
+# Build for production  
+bun run web:build
+```
+
+## 🔍 Health Monitoring
+
+Check service status:
+```bash
+curl http://localhost:3001/health
+```
+
+Response includes:
+- Overall service health
+- Storage provider status
+- Embedding provider status  
+- System uptime
+
+## 🤝 Contributing
+
+The flexible backend architecture makes it easy to add new providers:
+
+1. **Storage Provider**: Implement `StorageService` interface
+2. **Embedding Provider**: Implement `EmbeddingService` interface  
+3. **Update Factories**: Add to respective factory files
+4. **Configuration**: Add options to config schema
+
+## 📄 License
+
+MIT License - see LICENSE file for details.
 
 A Model Context Protocol (MCP) server that provides AI assistants with the ability to search and query documentation using Google Cloud's Firestore Vector Search and Vertex AI embeddings.
 

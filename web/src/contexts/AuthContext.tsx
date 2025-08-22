@@ -49,7 +49,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   }, []);
 
-  const login = async (email: string, password: string): Promise<void> => {
+  const login = async (email: string, _password: string): Promise<void> => {
     try {
       // TODO: Replace with actual API call
       // For now, create a mock user
@@ -74,7 +74,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const register = async (
     email: string,
-    password: string,
+    _password: string,
     name: string
   ): Promise<void> => {
     try {
