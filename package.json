@@ -63,9 +63,10 @@
     "documentation",
     "ai",
     "vector-search",
-    "google-cloud",
-    "firestore",
-    "vertex-ai",
-    "gemini"
+    "chromadb",
+    "xenova",
+    "elysia",
+    "bun",
+    "sse"
   ]
 }

@@ -195,7 +195,7 @@ export function startMcpServer(app: Elysia) {
     }
   );
 
-  // Tool: Agentic search with Gemini
+  // Tool: Agentic search (extractive, provider-agnostic)
   server.registerTool(
     "agentic_search",
     {

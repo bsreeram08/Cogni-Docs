@@ -8,12 +8,10 @@ This version introduces a complete backend abstraction layer that allows you to 
 
 ### **Storage Options**
 
-- **Firestore** - Cloud-native, managed by Google
 - **ChromaDB** - Open-source vector database
 
 ### **Embedding Options**
 
-- **Vertex AI** - Google's cloud embedding service
 - **Xenova/Transformers** - Local, privacy-focused embeddings
 
 ### Provider registry and provider-agnostic configuration (New)
@@ -32,7 +30,7 @@ EMBEDDINGS_OPTIONS={"model":"Xenova/all-MiniLM-L6-v2","maxBatchSize":50}
 
 Notes:
 
-- Providers self-register via `src/*/providers/index.ts` side-effect imports.
+- Providers self-register via `app/*/providers/index.ts` side-effect imports (e.g., `app/embeddings/providers/index.ts`, `app/storage/providers/index.ts`).
 - Adding a provider is as simple as adding a new file that calls `register*Provider()`.
 - Old variables like `STORAGE_PROVIDER`, `EMBEDDING_PROVIDER`, `CHROMA_URL`, `XENOVA_MODEL` are supported for backward-compat in parsing, but are deprecated.
 
@@ -57,7 +55,6 @@ Notes:
         │  Storage Layer │        │ Embedding     │
         │                │        │ Layer         │
         ├────────────────┤        ├───────────────┤
-        │ • Firestore    │        │ • Vertex AI   │
         │ • ChromaDB     │        │ • Xenova      │
         │                │        │               │
         └────────────────┘        └───────────────┘
@@ -84,29 +81,8 @@ EMBEDDINGS_NAME=xenova
 EMBEDDINGS_OPTIONS={"model":"Xenova/all-MiniLM-L6-v2","maxBatchSize":50}
 
 # Start servers
-bun run upload-server:dev  # Upload server on :3001
-bun run mcp-server        # MCP server for Claude
-```
-
-### Cloud-Optimized Setup (Google Cloud)
-
-```bash
-# Install and configure
-bun install
-cp .env.example .env
-
-# Edit .env (provider-agnostic):
-STORAGE_NAME=firestore
-STORAGE_OPTIONS={"projectId":"your-project-id"}
-EMBEDDINGS_NAME=vertex-ai
-EMBEDDINGS_OPTIONS={"model":"text-embedding-004","location":"us-central1"}
-
-# Authenticate with Google Cloud
-gcloud auth application-default login
-
-# Start servers
-bun run upload-server:dev
-bun run mcp-server
+# Start server (Upload + MCP on the same port)
+bun run upload-server:prod  # Default :3001 (set HTTP_PORT). Use :dev for watch mode
 ```
 
 ### Hybrid Setup (ChromaDB + Local Embeddings)
@@ -122,8 +98,7 @@ EMBEDDINGS_NAME=xenova
 EMBEDDINGS_OPTIONS={"model":"Xenova/all-MiniLM-L6-v2"}
 
 # Start app
-bun run upload-server:dev
-bun run mcp-server
+bun run upload-server:prod
 ```
 
 ## 📋 Configuration Options
@@ -133,9 +108,9 @@ bun run mcp-server
 | Variable             | Type   | Description                                                                                                |
 | -------------------- | ------ | ---------------------------------------------------------------------------------------------------------- |
 | `HTTP_PORT`          | number | Upload server port (default: 3001 in examples, config default 8787)                                        |
-| `STORAGE_NAME`       | string | Storage provider name (e.g., `chroma`, `firestore`)                                                        |
+| `STORAGE_NAME`       | string | Storage provider name (e.g., `chroma`)                                                                     |
 | `STORAGE_OPTIONS`    | JSON   | Provider-specific options as JSON (e.g., `{ "url": "http://localhost:8000" }` or `{ "projectId": "..." }`) |
-| `EMBEDDINGS_NAME`    | string | Embeddings provider name (e.g., `xenova`, `vertex-ai`)                                                     |
+| `EMBEDDINGS_NAME`    | string | Embeddings provider name (e.g., `xenova`)                                                                  |
 | `EMBEDDINGS_OPTIONS` | JSON   | Provider-specific options as JSON (e.g., `{ "model": "Xenova/all-MiniLM-L6-v2" }`)                         |
 | `CHUNK_SIZE`         | number | Target chunk size for splitting documents (default: 1000)                                                  |
 | `CHUNK_OVERLAP`      | number | Overlap between chunks in characters (default: 200)                                                        |
@@ -147,20 +122,20 @@ Deprecated (still parsed for backward compatibility): `STORAGE_PROVIDER`, `EMBED
 
 ## 🔧 Technology Stack Comparison
 
-| Feature              | Firestore + Vertex AI | ChromaDB + Xenova |
-| -------------------- | --------------------- | ----------------- |
-| **Privacy**          | ❌ Cloud-based        | ✅ Self-hosted    |
-| **Performance**      | ✅ Excellent          | ✅ Good           |
-| **Scalability**      | ✅ Unlimited          | ✅ High           |
-| **Setup Complexity** | ⚠️ Medium             | ⚠️ Medium         |
-| **Cost**             | 💰 Pay-per-use        | 💰 Infrastructure |
-| **Offline Support**  | ❌ No                 | ⚠️ Partial        |
+| Feature              | ChromaDB + Xenova |
+| -------------------- | ----------------- |
+| **Privacy**          | ✅ Self-hosted    |
+| **Performance**      | ✅ Good           |
+| **Scalability**      | ✅ High           |
+| **Setup Complexity** | ⚠️ Medium         |
+| **Cost**             | 💰 Infrastructure |
+| **Offline Support**  | ⚠️ Partial        |
 
 ## 🎯 Use Cases
 
 ### **Enterprise/Production**
 
-→ **Firestore + Vertex AI**
+→ **ChromaDB + Xenova**
 
 - Automatic scaling
 - Enterprise security
@@ -185,25 +160,26 @@ Deprecated (still parsed for backward compatibility): `STORAGE_PROVIDER`, `EMBED
 ## 📁 Project Structure
 
 ```
-src/
+app/
+├── index.ts                     # Starts HTTP Upload + MCP server
 ├── config/
-│   └── app-config.ts          # Configuration management with Zod
+│   └── app-config.ts            # Zod-validated, provider-agnostic config
 ├── storage/
-│   ├── storage-interface.ts   # Common storage interface
-│   ├── firestore-storage.ts   # Firestore implementation
-│   ├── chroma-storage.ts      # ChromaDB implementation
-│   └── storage-factory.ts     # Factory for storage services
+│   ├── storage-interface.ts     # Storage interface
+│   ├── chroma-storage.ts        # ChromaDB implementation
+│   └── storage-factory.ts       # Provider registry + factory
 ├── embeddings/
-│   ├── embedding-interface.ts # Common embedding interface
-│   ├── vertex-ai-embeddings.ts # Vertex AI implementation
-│   ├── xenova-embeddings.ts   # Xenova implementation
-│   └── embedding-factory.ts   # Factory for embedding services
-├── services/
-│   └── service-provider.ts    # Singleton service manager
-├── validation/
-│   └── api-schemas.ts         # Zod validation schemas
-└── processing/
-    └── document-processor.ts  # Updated to use abstractions
+│   ├── embedding-interface.ts   # Embeddings interface
+│   ├── embedding-factory.ts     # Provider registry + factory
+│   └── providers/               # Embedding providers (e.g., Xenova)
+├── server/
+│   └── mcp-server.ts            # MCP tools + SSE transport (/sse, /messages)
+├── ingest/
+│   └── chunker.ts               # Document chunking
+└── parsers/
+    ├── pdf.ts                   # PDF parser
+    ├── html.ts                  # HTML parser
+    └── text.ts                  # Plain text parser
 ```
 
 ## 🔌 API Endpoints
@@ -218,11 +194,14 @@ src/
 - `POST /sets/:setId/upload` - Upload documents
 - `DELETE /sets/:setId/documents/:docId` - Delete document
 
-### MCP Server (stdio)
+### MCP Server (HTTP SSE)
 
-- `list_documentation_sets` - List available sets
-- `search_documentation` - Vector search within sets
-- `ask_documentation` - AI-powered question answering
+- Transport: `GET /sse` (event stream), `POST /messages` (JSON messages)
+- Tools:
+  - `list_documentation_sets` - List available sets
+  - `get_documentation_set` - Get details about a specific set
+  - `search_documentation` - Vector search within a set
+  - `agentic_search` - Extractive, context-grounded answers
 
 ## 🛠️ Development
 
@@ -231,8 +210,8 @@ src/
 bun install
 
 # Development with file watching
-bun run dev              # Upload server with hot reload
-bun run web:dev         # Web UI development server
+bun run upload-server:dev  # Upload+MCP server with hot reload
+bun run web:dev            # Web UI development server
 
 # Type checking
 bun run typecheck
@@ -269,7 +248,7 @@ The flexible backend architecture makes it easy to add new providers:
 
 MIT License - see LICENSE file for details.
 
-A Model Context Protocol (MCP) server that provides AI assistants with the ability to search and query documentation using Google Cloud's Firestore Vector Search and Vertex AI embeddings.
+A Model Context Protocol (MCP) server that provides AI assistants with the ability to search and query documentation using local-first, provider-agnostic backend.
 
 ## Architecture
 
@@ -281,8 +260,7 @@ This project implements a **dual-server architecture**:
 ### Key Features
 
 - **Multi-format parsing**: PDF, HTML, and plain text documents
-- **Google Cloud integration**: Firestore Vector Search + Vertex AI embeddings
-- **Agentic search**: Gemini AI provides intelligent answers based on documentation
+- **Agentic search**: Extractive answers grounded in your documentation via MCP tools
 - **Multi-tenant**: Multiple documentation sets with isolated search
 - **Modern stack**: Bun runtime, TypeScript, Elysia framework
 
@@ -291,8 +269,7 @@ This project implements a **dual-server architecture**:
 ### Prerequisites
 
 - Bun runtime installed
-- Google Cloud project with Firestore and Vertex AI enabled
-- Service account with appropriate permissions
+- Docker (optional) for ChromaDB
 
 ### Setup
 
@@ -306,7 +283,7 @@ bun install
 
 ```bash
 cp .env.example .env
-# Edit .env with your Google Cloud settings
+# Edit .env with your provider-agnostic settings
 ```
 
 3. **Start the upload server:**
@@ -346,7 +323,7 @@ The MCP server exposes four tools:
 - `list_documentation_sets` - List all available documentation sets
 - `get_documentation_set` - Get details about a specific set
 - `search_documentation` - Basic vector search within a set
-- `agentic_search` - AI-powered search with Gemini integration
+- `agentic_search` - Agentic, context-grounded answers from your docs
 
 ### 3. Agentic Search Example
 
@@ -379,79 +356,24 @@ CHUNK_OVERLAP=200
 MAX_CHUNK_SIZE=2000
 ```
 
-### Google Cloud Setup
-
-1. Enable APIs:
-
-   - Firestore API
-   - Vertex AI API
-
-2. Create service account with roles:
-
-   - Firestore Service Agent
-   - Vertex AI User
-
-3. Authentication options:
-   - Use `gcloud auth application-default login`
-   - Or set `GOOGLE_APPLICATION_CREDENTIALS` to service account key path
-
-## Project Structure
-
-```
-src/
-├── db/
-│   └── firestore.ts          # Firestore operations
-├── ingest/
-│   └── chunker.ts            # Text chunking logic
-├── parsers/
-│   ├── text.ts              # Plain text parser
-│   ├── html.ts              # HTML parser
-│   └── pdf.ts               # PDF parser
-├── processing/
-│   └── document-processor.ts # Document processing pipeline
-├── services/
-│   ├── google-cloud.ts      # Google Cloud initialization
-│   ├── embeddings.ts        # Vertex AI embeddings
-│   ├── query-service.ts     # Documentation search
-│   └── gemini-service.ts    # Gemini AI integration
-├── utils/
-│   └── ids.ts               # ID generation
-├── types.ts                 # TypeScript types
-├── upload-server.ts         # HTTP upload server
-└── mcp-server.ts           # MCP server
-```
-
 ## Development
 
 ### Scripts
 
 ```bash
-bun run dev              # Hot reload main server
-bun run upload-server    # Start upload server
-bun run mcp-server       # Start MCP server
-bun run typecheck        # Type checking
+bun run upload-server:dev  # Hot reload Upload+MCP server
+bun run upload-server:prod # Production Upload+MCP server
+bun run web:dev            # Web UI dev
+bun run typecheck          # Type checking
 ```
 
 ### Adding New Document Types
 
-1. Create parser in `src/parsers/`
-2. Add MIME type to `src/types.ts`
-3. Update `parseDocumentContent` in `document-processor.ts`
+1. Create parser in `app/parsers/`
+2. Register/route the MIME type alongside existing parsers
+3. Ensure chunking strategy in `app/ingest/chunker.ts` suits the new type
 
 ## Architecture Decisions
-
-### Why Google Cloud?
-
-- **Firestore Vector Search**: Native vector similarity search (2024 feature)
-- **Vertex AI**: High-quality text embeddings with `text-embedding-004`
-- **Integrated ecosystem**: Single cloud provider for consistency
-- **Cost-effective**: Pay-per-use pricing model
-
-### Why Dual Servers?
-
-- **Separation of concerns**: Document management vs. AI querying
-- **Security**: Upload server can be internal, MCP server exposed to AI
-- **Scalability**: Each can scale independently
 
 ### Why Bun?
 
@@ -461,35 +383,26 @@ bun run typecheck        # Type checking
 
 ## Troubleshooting
 
-### Vector Search Not Working?
+### SSE transport disconnects
 
-Currently using mock embeddings for development. To enable real Vertex AI:
+- Prefer `bun run upload-server:prod` (non-watch) for stability.
+- Ensure your MCP client uses `GET /sse` (not POST) and `POST /messages`.
+- If the IDE session gets stale, reload the MCP client to re-handshake.
 
-1. Implement actual embedding API calls in `src/services/embeddings.ts`
-2. Set up Firestore vector index configuration
-3. Update vector search implementation in `src/db/firestore.ts`
+### ChromaDB connectivity
 
-### Authentication Issues?
+- Verify Chroma is running and `STORAGE_OPTIONS={"url":"http://localhost:8000"}`.
+- Check `GET /health` for storage status; restart Chroma if down.
 
-```bash
-# Check authentication
-gcloud auth list
-gcloud config list project
+### Embedding model setup
 
-# Re-authenticate if needed
-gcloud auth application-default login
-```
+- Xenova model downloads on first run; allow network access once if needed.
+- Adjust `EMBEDDINGS_OPTIONS` (e.g., `maxBatchSize`) if you see memory warnings.
 
-### Common Errors
 
-- **"Project not found"**: Check `GOOGLE_CLOUD_PROJECT_ID`
-- **"API not enabled"**: Enable Firestore and Vertex AI APIs
-- **"Permission denied"**: Verify service account permissions
 
 ## Future Enhancements
 
-- [ ] Implement real Vertex AI embeddings API
-- [ ] Add Firestore vector search index setup
 - [ ] Support for more document formats (DOCX, Markdown)
 - [ ] Document metadata search and filtering
 - [ ] Batch upload improvements
@@ -519,7 +432,7 @@ bun install
 To run:
 
 ```bash
-bun run index.ts
+bun run upload-server:prod
 ```
 
 This project was created using `bun init` in bun v1.2.20. [Bun](https://bun.com) is a fast all-in-one JavaScript runtime.
