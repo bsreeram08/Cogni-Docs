@@ -7,10 +7,12 @@ A Model Context Protocol (MCP) server that provides AI assistants with the abili
 This version introduces a complete backend abstraction layer that allows you to choose your preferred technology stack:
 
 ### **Storage Options**
+
 - **Firestore** - Cloud-native, managed by Google
 - **ChromaDB** - Open-source vector database
 
-### **Embedding Options**  
+### **Embedding Options**
+
 - **Vertex AI** - Google's cloud embedding service
 - **Xenova/Transformers** - Local, privacy-focused embeddings
 
@@ -29,6 +31,7 @@ EMBEDDINGS_OPTIONS={"model":"Xenova/all-MiniLM-L6-v2","maxBatchSize":50}
 ```
 
 Notes:
+
 - Providers self-register via `src/*/providers/index.ts` side-effect imports.
 - Adding a provider is as simple as adding a new file that calls `register*Provider()`.
 - Old variables like `STORAGE_PROVIDER`, `EMBEDDING_PROVIDER`, `CHROMA_URL`, `XENOVA_MODEL` are supported for backward-compat in parsing, but are deprecated.
@@ -62,7 +65,10 @@ Notes:
 
 ## 🚀 Quick Start
 
+[Installation & Setup](docs/installation.md)
+
 ### Privacy-Focused Setup (Local Only)
+
 ```bash
 # Clone and install
 git clone <repository>
@@ -83,6 +89,7 @@ bun run mcp-server        # MCP server for Claude
 ```
 
 ### Cloud-Optimized Setup (Google Cloud)
+
 ```bash
 # Install and configure
 bun install
@@ -103,6 +110,7 @@ bun run mcp-server
 ```
 
 ### Hybrid Setup (ChromaDB + Local Embeddings)
+
 ```bash
 # Start ChromaDB
 docker run -p 8000:8000 chromadb/chroma
@@ -122,16 +130,16 @@ bun run mcp-server
 
 ### Environment Variables
 
-| Variable | Type | Description |
-|----------|------|-------------|
-| `HTTP_PORT` | number | Upload server port (default: 3001 in examples, config default 8787) |
-| `STORAGE_NAME` | string | Storage provider name (e.g., `chroma`, `firestore`) |
-| `STORAGE_OPTIONS` | JSON | Provider-specific options as JSON (e.g., `{ "url": "http://localhost:8000" }` or `{ "projectId": "..." }`) |
-| `EMBEDDINGS_NAME` | string | Embeddings provider name (e.g., `xenova`, `vertex-ai`) |
-| `EMBEDDINGS_OPTIONS` | JSON | Provider-specific options as JSON (e.g., `{ "model": "Xenova/all-MiniLM-L6-v2" }`) |
-| `CHUNK_SIZE` | number | Target chunk size for splitting documents (default: 1000) |
-| `CHUNK_OVERLAP` | number | Overlap between chunks in characters (default: 200) |
-| `MAX_CHUNK_SIZE` | number | Hard cap for chunk size (default: 2000) |
+| Variable             | Type   | Description                                                                                                |
+| -------------------- | ------ | ---------------------------------------------------------------------------------------------------------- |
+| `HTTP_PORT`          | number | Upload server port (default: 3001 in examples, config default 8787)                                        |
+| `STORAGE_NAME`       | string | Storage provider name (e.g., `chroma`, `firestore`)                                                        |
+| `STORAGE_OPTIONS`    | JSON   | Provider-specific options as JSON (e.g., `{ "url": "http://localhost:8000" }` or `{ "projectId": "..." }`) |
+| `EMBEDDINGS_NAME`    | string | Embeddings provider name (e.g., `xenova`, `vertex-ai`)                                                     |
+| `EMBEDDINGS_OPTIONS` | JSON   | Provider-specific options as JSON (e.g., `{ "model": "Xenova/all-MiniLM-L6-v2" }`)                         |
+| `CHUNK_SIZE`         | number | Target chunk size for splitting documents (default: 1000)                                                  |
+| `CHUNK_OVERLAP`      | number | Overlap between chunks in characters (default: 200)                                                        |
+| `MAX_CHUNK_SIZE`     | number | Hard cap for chunk size (default: 2000)                                                                    |
 
 See `.env.example` for complete configuration options.
 
@@ -139,31 +147,37 @@ Deprecated (still parsed for backward compatibility): `STORAGE_PROVIDER`, `EMBED
 
 ## 🔧 Technology Stack Comparison
 
-| Feature | Firestore + Vertex AI | ChromaDB + Xenova |
-|---------|----------------------|-------------------|
-| **Privacy** | ❌ Cloud-based | ✅ Self-hosted |
-| **Performance** | ✅ Excellent | ✅ Good |
-| **Scalability** | ✅ Unlimited | ✅ High |
-| **Setup Complexity** | ⚠️ Medium | ⚠️ Medium |
-| **Cost** | 💰 Pay-per-use | 💰 Infrastructure |
-| **Offline Support** | ❌ No | ⚠️ Partial |
+| Feature              | Firestore + Vertex AI | ChromaDB + Xenova |
+| -------------------- | --------------------- | ----------------- |
+| **Privacy**          | ❌ Cloud-based        | ✅ Self-hosted    |
+| **Performance**      | ✅ Excellent          | ✅ Good           |
+| **Scalability**      | ✅ Unlimited          | ✅ High           |
+| **Setup Complexity** | ⚠️ Medium             | ⚠️ Medium         |
+| **Cost**             | 💰 Pay-per-use        | 💰 Infrastructure |
+| **Offline Support**  | ❌ No                 | ⚠️ Partial        |
 
 ## 🎯 Use Cases
 
 ### **Enterprise/Production**
+
 → **Firestore + Vertex AI**
+
 - Automatic scaling
 - Enterprise security
 - Managed infrastructure
 
 ### **Privacy-Sensitive**
-→ **ChromaDB + Xenova** 
+
+→ **ChromaDB + Xenova**
+
 - No external cloud dependencies
 - Complete data control
 - Works in air-gapped environments
 
 ### **Development/Research**
+
 → **ChromaDB + Xenova**
+
 - Easy experimentation
 - Good performance
 - Flexible deployment
@@ -176,7 +190,7 @@ src/
 │   └── app-config.ts          # Configuration management with Zod
 ├── storage/
 │   ├── storage-interface.ts   # Common storage interface
-│   ├── firestore-storage.ts   # Firestore implementation  
+│   ├── firestore-storage.ts   # Firestore implementation
 │   ├── chroma-storage.ts      # ChromaDB implementation
 │   └── storage-factory.ts     # Factory for storage services
 ├── embeddings/
@@ -195,6 +209,7 @@ src/
 ## 🔌 API Endpoints
 
 ### Upload Server (Port 3001)
+
 - `GET /health` - Service health check with provider status
 - `GET /sets` - List documentation sets
 - `POST /sets` - Create documentation set
@@ -204,8 +219,9 @@ src/
 - `DELETE /sets/:setId/documents/:docId` - Delete document
 
 ### MCP Server (stdio)
+
 - `list_documentation_sets` - List available sets
-- `search_documentation` - Vector search within sets  
+- `search_documentation` - Vector search within sets
 - `ask_documentation` - AI-powered question answering
 
 ## 🛠️ Development
@@ -221,21 +237,23 @@ bun run web:dev         # Web UI development server
 # Type checking
 bun run typecheck
 
-# Build for production  
+# Build for production
 bun run web:build
 ```
 
 ## 🔍 Health Monitoring
 
 Check service status:
+
 ```bash
 curl http://localhost:3001/health
 ```
 
 Response includes:
+
 - Overall service health
 - Storage provider status
-- Embedding provider status  
+- Embedding provider status
 - System uptime
 
 ## 🤝 Contributing
@@ -243,7 +261,7 @@ Response includes:
 The flexible backend architecture makes it easy to add new providers:
 
 1. **Storage Provider**: Implement `StorageService` interface
-2. **Embedding Provider**: Implement `EmbeddingService` interface  
+2. **Embedding Provider**: Implement `EmbeddingService` interface
 3. **Update Factories**: Add to respective factory files
 4. **Configuration**: Add options to config schema
 
@@ -279,22 +297,26 @@ This project implements a **dual-server architecture**:
 ### Setup
 
 1. **Clone and install dependencies:**
+
 ```bash
 bun install
 ```
 
 2. **Configure environment:**
+
 ```bash
 cp .env.example .env
 # Edit .env with your Google Cloud settings
 ```
 
 3. **Start the upload server:**
+
 ```bash
 bun run upload-server
 ```
 
 4. **In another terminal, start the MCP server:**
+
 ```bash
 bun run mcp-server
 ```
@@ -330,10 +352,10 @@ The MCP server exposes four tools:
 
 ```typescript
 // In Claude or another MCP-compatible AI assistant
-await mcp.callTool('agentic_search', {
-  setId: 'your-set-id',
-  query: 'How do I authenticate API requests?',
-  limit: 10
+await mcp.callTool("agentic_search", {
+  setId: "your-set-id",
+  query: "How do I authenticate API requests?",
+  limit: 10,
 });
 ```
 
@@ -360,10 +382,12 @@ MAX_CHUNK_SIZE=2000
 ### Google Cloud Setup
 
 1. Enable APIs:
+
    - Firestore API
    - Vertex AI API
 
 2. Create service account with roles:
+
    - Firestore Service Agent
    - Vertex AI User
 
@@ -476,6 +500,7 @@ gcloud auth application-default login
 ## Contributing
 
 This project follows the user's coding guidelines:
+
 - TypeScript with proper typing
 - Functional programming patterns
 - Modular architecture
