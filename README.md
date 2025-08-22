@@ -88,11 +88,11 @@ bun run mcp-server        # MCP server for Claude
 bun install
 cp .env.example .env
 
-# Edit .env:
-STORAGE_PROVIDER=firestore
-EMBEDDING_PROVIDER=vertex-ai
-GOOGLE_CLOUD_PROJECT_ID=your-project-id
-EMBEDDING_MODEL=text-embedding-004
+# Edit .env (provider-agnostic):
+STORAGE_NAME=firestore
+STORAGE_OPTIONS={"projectId":"your-project-id"}
+EMBEDDINGS_NAME=vertex-ai
+EMBEDDINGS_OPTIONS={"model":"text-embedding-004","location":"us-central1"}
 
 # Authenticate with Google Cloud
 gcloud auth application-default login
@@ -108,10 +108,10 @@ bun run mcp-server
 docker run -p 8000:8000 chromadb/chroma
 
 # Configure app
-STORAGE_PROVIDER=chroma
-EMBEDDING_PROVIDER=xenova
-CHROMA_URL=http://localhost:8000
-XENOVA_MODEL=Xenova/all-MiniLM-L6-v2
+STORAGE_NAME=chroma
+STORAGE_OPTIONS={"url":"http://localhost:8000"}
+EMBEDDINGS_NAME=xenova
+EMBEDDINGS_OPTIONS={"model":"Xenova/all-MiniLM-L6-v2"}
 
 # Start app
 bun run upload-server:dev
@@ -122,15 +122,20 @@ bun run mcp-server
 
 ### Environment Variables
 
-| Variable | Options | Description |
-|----------|---------|-------------|
-| `STORAGE_PROVIDER` | `firestore` \| `chroma` | Choose your storage backend |
-| `EMBEDDING_PROVIDER` | `vertex-ai` \| `xenova` | Choose your embedding service |
-| `GOOGLE_CLOUD_PROJECT_ID` | string | Required for Firestore/Vertex AI |
-| `CHROMA_URL` | url | ChromaDB server URL |
-| `XENOVA_MODEL` | model | Hugging Face model for local embeddings |
+| Variable | Type | Description |
+|----------|------|-------------|
+| `HTTP_PORT` | number | Upload server port (default: 3001 in examples, config default 8787) |
+| `STORAGE_NAME` | string | Storage provider name (e.g., `chroma`, `firestore`) |
+| `STORAGE_OPTIONS` | JSON | Provider-specific options as JSON (e.g., `{ "url": "http://localhost:8000" }` or `{ "projectId": "..." }`) |
+| `EMBEDDINGS_NAME` | string | Embeddings provider name (e.g., `xenova`, `vertex-ai`) |
+| `EMBEDDINGS_OPTIONS` | JSON | Provider-specific options as JSON (e.g., `{ "model": "Xenova/all-MiniLM-L6-v2" }`) |
+| `CHUNK_SIZE` | number | Target chunk size for splitting documents (default: 1000) |
+| `CHUNK_OVERLAP` | number | Overlap between chunks in characters (default: 200) |
+| `MAX_CHUNK_SIZE` | number | Hard cap for chunk size (default: 2000) |
 
 See `.env.example` for complete configuration options.
+
+Deprecated (still parsed for backward compatibility): `STORAGE_PROVIDER`, `EMBEDDING_PROVIDER`, `CHROMA_URL`, `XENOVA_MODEL`, `MAX_BATCH_SIZE`, `UPLOAD_SERVER_PORT`, `UPLOAD_SERVER_HOST`.
 
 ## 🔧 Technology Stack Comparison
 
@@ -337,13 +342,19 @@ await mcp.callTool('agentic_search', {
 ### Environment Variables
 
 ```bash
-# Required
-GOOGLE_CLOUD_PROJECT_ID=your-project-id
+# Core
+HTTP_PORT=3001
 
-# Optional
-GOOGLE_CLOUD_LOCATION=us-central1
-UPLOAD_SERVER_PORT=3001
-UPLOAD_SERVER_HOST=localhost
+# Provider-agnostic
+STORAGE_NAME=chroma
+STORAGE_OPTIONS={"url":"http://localhost:8000"}
+EMBEDDINGS_NAME=xenova
+EMBEDDINGS_OPTIONS={"model":"Xenova/all-MiniLM-L6-v2","maxBatchSize":50}
+
+# Chunking
+CHUNK_SIZE=1000
+CHUNK_OVERLAP=200
+MAX_CHUNK_SIZE=2000
 ```
 
 ### Google Cloud Setup

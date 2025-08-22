@@ -16,6 +16,24 @@ interface HealthResponse {
   readonly timestamp: string;
 }
 
+function isDocumentsResponse(x: unknown): x is DocumentsResponse {
+  if (typeof x !== "object" || x === null) return false;
+  const docs = (x as { readonly documents?: unknown }).documents;
+  if (!Array.isArray(docs)) return false;
+  // Optional shallow check of first item if present
+  if (docs.length > 0) {
+    const d = docs[0] as Record<string, unknown>;
+    return (
+      typeof d.id === "string" &&
+      typeof d.source_file === "string" &&
+      typeof d.mime_type === "string" &&
+      typeof d.size_bytes === "number" &&
+      typeof d.created_at === "string"
+    );
+  }
+  return true;
+}
+
 interface CreateSetResponse {
   readonly id: string;
   readonly name: string;
@@ -30,10 +48,26 @@ interface UploadResultItem {
   readonly chunksCreated: number;
 }
 
+interface DocumentsResponseItem {
+  readonly id: string;
+  readonly source_file: string;
+  readonly mime_type: string;
+  readonly size_bytes: number;
+  readonly created_at: string;
+}
+
+interface DocumentsResponse {
+  readonly documents: readonly DocumentsResponseItem[];
+}
+
 async function expectOk(res: Response, message: string): Promise<void> {
   if (!res.ok) {
     const body = await safeJson(res);
-    throw new Error(`${message} failed: HTTP ${res.status} ${res.statusText} - ${JSON.stringify(body)}`);
+    throw new Error(
+      `${message} failed: HTTP ${res.status} ${
+        res.statusText
+      } - ${JSON.stringify(body)}`
+    );
   }
 }
 
@@ -53,13 +87,17 @@ async function run(): Promise<void> {
   const healthRes = await fetch(`${BASE_URL}/health`);
   await expectOk(healthRes, "Health check");
   const health: HealthResponse = (await healthRes.json()) as HealthResponse;
-  console.log(`   status=${health.status}, storage=${health.storage.provider}, embeddings=${health.embeddings.provider}`);
+  console.log(
+    `   status=${health.status}, storage=${health.storage.provider}, embeddings=${health.embeddings.provider}`
+  );
 
   // 2) List sets (empty or existing)
   console.log("2) GET /sets");
   const setsRes = await fetch(`${BASE_URL}/sets`);
   await expectOk(setsRes, "List sets");
-  const setsJson = (await setsRes.json()) as { readonly sets: readonly CreateSetResponse[] };
+  const setsJson = (await setsRes.json()) as {
+    readonly sets: readonly CreateSetResponse[];
+  };
   console.log(`   sets=${setsJson.sets.length}`);
 
   // 3) Create set
@@ -71,14 +109,18 @@ async function run(): Promise<void> {
     body: JSON.stringify({ name: setName, description: "Demo set" }),
   });
   await expectOk(createRes, "Create set");
-  const created: CreateSetResponse = (await createRes.json()) as CreateSetResponse;
+  const created: CreateSetResponse =
+    (await createRes.json()) as CreateSetResponse;
   console.log(`   created id=${created.id}`);
 
   // 4) Get set by id
   console.log("4) GET /sets/:setId");
-  const getSetRes = await fetch(`${BASE_URL}/sets/${encodeURIComponent(created.id)}`);
+  const getSetRes = await fetch(
+    `${BASE_URL}/sets/${encodeURIComponent(created.id)}`
+  );
   await expectOk(getSetRes, "Get set");
-  const got: CreateSetResponse | { readonly error: string } = (await getSetRes.json()) as any;
+  const got: CreateSetResponse | { readonly error: string } =
+    (await getSetRes.json()) as any;
   if ("error" in got) throw new Error(`Get set returned error: ${got.error}`);
   console.log(`   got id=${got.id}`);
 
@@ -90,30 +132,55 @@ async function run(): Promise<void> {
   form.append("files", file1, "hello.txt");
   form.append("files", file2, "another.txt");
 
-  const uploadRes = await fetch(`${BASE_URL}/sets/${encodeURIComponent(created.id)}/upload`, {
-    method: "POST",
-    body: form,
-  });
+  const uploadRes = await fetch(
+    `${BASE_URL}/sets/${encodeURIComponent(created.id)}/upload`,
+    {
+      method: "POST",
+      body: form,
+    }
+  );
   await expectOk(uploadRes, "Upload files");
-  const uploadJson = (await uploadRes.json()) as { readonly message: string; readonly results: readonly UploadResultItem[] };
+  const uploadJson = (await uploadRes.json()) as {
+    readonly message: string;
+    readonly results: readonly UploadResultItem[];
+  };
   console.log(`   ${uploadJson.message}`);
-  if (!uploadJson.results?.length) throw new Error("Upload did not return any results");
+  if (!uploadJson.results?.length)
+    throw new Error("Upload did not return any results");
 
   // 6) List documents in set
   console.log("6) GET /sets/:setId/documents");
-  const docsRes = await fetch(`${BASE_URL}/sets/${encodeURIComponent(created.id)}/documents`);
+  const docsRes = await fetch(
+    `${BASE_URL}/sets/${encodeURIComponent(created.id)}/documents`
+  );
   await expectOk(docsRes, "List documents");
   const docsJson = await safeJson(docsRes);
-  console.log(`   documents payload type=${typeof docsJson}`);
+  if (!isDocumentsResponse(docsJson)) {
+    throw new Error(
+      `Unexpected documents response: ${JSON.stringify(docsJson)}`
+    );
+  }
+  console.log(`   documents=${docsJson.documents.length}`);
+  if (docsJson.documents.length === 0) {
+    throw new Error("Expected at least one document after upload");
+  }
 
   // 7) Delete first uploaded document
   console.log("7) DELETE /sets/:setId/documents/:documentId");
   const firstDocId = uploadJson.results[0].documentId;
-  const delRes = await fetch(`${BASE_URL}/sets/${encodeURIComponent(created.id)}/documents/${encodeURIComponent(firstDocId)}`, {
-    method: "DELETE",
-  });
+  const delRes = await fetch(
+    `${BASE_URL}/sets/${encodeURIComponent(
+      created.id
+    )}/documents/${encodeURIComponent(firstDocId)}`,
+    {
+      method: "DELETE",
+    }
+  );
   await expectOk(delRes, "Delete document");
-  const delJson = (await delRes.json()) as { readonly message?: string; readonly error?: string };
+  const delJson = (await delRes.json()) as {
+    readonly message?: string;
+    readonly error?: string;
+  };
   if (delJson.error) throw new Error(`Delete returned error: ${delJson.error}`);
   console.log(`   ${delJson.message}`);
 
@@ -122,7 +189,11 @@ async function run(): Promise<void> {
   const notFoundRes = await fetch(`${BASE_URL}/sets/nonexistent-set-id`);
   if (notFoundRes.status !== 404) {
     const nf = await safeJson(notFoundRes);
-    throw new Error(`Expected 404 for nonexistent set, got ${notFoundRes.status}: ${JSON.stringify(nf)}`);
+    throw new Error(
+      `Expected 404 for nonexistent set, got ${
+        notFoundRes.status
+      }: ${JSON.stringify(nf)}`
+    );
   }
   console.log("   got 404 as expected");
 
