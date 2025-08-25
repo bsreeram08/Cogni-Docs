@@ -298,18 +298,16 @@ export function startMcpServer(app: Elysia) {
     );
   }
 
-  // Basic info route
+  // List active SSE session IDs
+  app.get("/sessions", () => {
+    const sessions = Array.from(transports.keys());
+    return new Response(JSON.stringify(sessions), {
+      status: 200,
+      headers: { "content-type": "application/json" },
+    });
+  });
+
   app
-    .get("/", () => ({
-      name: "Bun Elysia MCP Server",
-      version: "1.0.0",
-      description: "Model Context Protocol server using Bun and Elysia",
-      endpoints: {
-        "/": "This info",
-        "/sse": "SSE endpoint for MCP connections",
-        "/messages": "Message endpoint for MCP clients",
-      },
-    }))
     .get("/sse", async (context) => {
       console.log("SSE connection requested");
 
@@ -329,6 +327,13 @@ export function startMcpServer(app: Elysia) {
             `Transport created with sessionId: ${transport.sessionId}`
           );
 
+          // Optional: log request abort (transport also listens internally)
+          context.request.signal.addEventListener("abort", () => {
+            console.log(
+              `Request aborted for session: ${transport.sessionId} (client disconnect)`
+            );
+          });
+
           // Store the transport
           console.log("Storing transport in map");
           transports.set(transport.sessionId, transport);
@@ -342,8 +347,18 @@ export function startMcpServer(app: Elysia) {
           console.log("Connecting to MCP server");
           await server.connect(transport);
           console.log("Connected to MCP server");
+          console.log(`SSE connected: ${transport.sessionId}`);
 
-          console.log("SSE connection successful");
+          // Wrap any existing onclose so our cleanup always runs
+          const prevOnClose = transport.onclose;
+          transport.onclose = () => {
+            // Remove on disconnect
+            transports.delete(transport.sessionId);
+            console.log(
+              `SSE disconnected: ${transport.sessionId}. Active sessions: ${transports.size}`
+            );
+            prevOnClose?.();
+          };
           // Return the response set by the transport
           // @ts-ignore
           return context.response;
@@ -383,6 +398,51 @@ export function startMcpServer(app: Elysia) {
           }
         );
       }
+    })
+    // Guard: Misconfigured clients sometimes POST to /sse; respond with 405 instead of NOT_FOUND
+    .post("/sse", () => {
+      return new Response(
+        JSON.stringify({ error: "Method Not Allowed. Use GET /sse for SSE." }),
+        {
+          status: 405,
+          headers: {
+            "content-type": "application/json",
+            allow: "GET",
+          },
+        }
+      );
+    })
+    // Reduce noise from well-known discovery probes by returning clean 404s
+    .get("/.well-known/oauth-protected-resource", () => {
+      return new Response(JSON.stringify({ error: "Not Found" }), {
+        status: 404,
+        headers: { "content-type": "application/json" },
+      });
+    })
+    .get("/.well-known/openid-configuration", () => {
+      return new Response(JSON.stringify({ error: "Not Found" }), {
+        status: 404,
+        headers: { "content-type": "application/json" },
+      });
+    })
+    .get("/.well-known/oauth-authorization-server", () => {
+      return new Response(JSON.stringify({ error: "Not Found" }), {
+        status: 404,
+        headers: { "content-type": "application/json" },
+      });
+    })
+    // Some clients POST /register; reply with guidance
+    .post("/register", () => {
+      return new Response(
+        JSON.stringify({
+          error:
+            "Not Found. This server uses GET /sse and POST /messages for MCP.",
+        }),
+        {
+          status: 404,
+          headers: { "content-type": "application/json" },
+        }
+      );
     })
     // Handle messages
     .post("/messages", async (context) => {

@@ -30,34 +30,49 @@ EMBEDDINGS_OPTIONS={"model":"Xenova/all-MiniLM-L6-v2","maxBatchSize":50}
 
 Notes:
 
-- Providers self-register via `app/*/providers/index.ts` side-effect imports (e.g., `app/embeddings/providers/index.ts`, `app/storage/providers/index.ts`).
+- Providers self-register via `app/*/providers/index.ts` side-effect imports (e.g., `app/embeddings/providers/index.ts`, `app/storage/providers/index.ts`, `app/chunking/providers/index.ts`).
 - Adding a provider is as simple as adding a new file that calls `register*Provider()`.
 - Old variables like `STORAGE_PROVIDER`, `EMBEDDING_PROVIDER`, `CHROMA_URL`, `XENOVA_MODEL` are supported for backward-compat in parsing, but are deprecated.
 
+### Chunking updates
+
+- Default chunker is now **LangChain** with the recursive strategy.
+- Recommended defaults: `chunkSize=3000`, `chunkOverlap=150`.
+- Configure via `CHUNKING_NAME=langchain` and `CHUNKING_OPTIONS={"strategy":"recursive","chunkSize":3000,"chunkOverlap":150}`.
+- The Chonkie provider was refined to normalize outputs (e.g., `RecursiveChunk`) to strings so `Chunk.text` is always a string.
+
 ## 🏗️ Architecture
 
-```
-┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
-│   MCP Client    │    │   HTTP Upload    │    │   Web UI        │
-│   (Claude)      │    │   Server         │    │   (Optional)    │
-└─────────────────┘    └──────────────────┘    └─────────────────┘
-         │                        │                        │
-         └────────────────────────┼────────────────────────┘
-                                  │
-                     ┌─────────────────────┐
-                     │  Service Provider   │
-                     │  (Abstraction)      │
-                     └─────────────────────┘
-                              │
-                 ┌────────────┴────────────┐
-                 │                         │
-        ┌────────────────┐        ┌───────────────┐
-        │  Storage Layer │        │ Embedding     │
-        │                │        │ Layer         │
-        ├────────────────┤        ├───────────────┤
-        │ • ChromaDB     │        │ • Xenova      │
-        │                │        │               │
-        └────────────────┘        └───────────────┘
+```mermaid
+---
+config:
+  layout: dagre
+  theme: redux
+  look: neo
+---
+flowchart LR
+ subgraph subGraph0["Storage Providers"]
+        chroma["ChromaDB"]
+        storage["Storage Layer"]
+  end
+ subgraph subGraph1["Embedding Providers"]
+        xenova["Xenova"]
+        embeddings["Embedding Layer"]
+  end
+ subgraph subGraph2["Chunking Providers"]
+        langchain["LangChain (default)"]
+        chunking["Chunking Layer"]
+        chonkie["Chonkie"]
+        builtin["Builtin"]
+  end
+    client["MCP Client (Claude)"] --- upload["HTTP Upload Server"]
+    web["Web UI (Optional)"] --- upload
+    upload --> abstractions["Provider Abstractions\n(Storage / Embeddings / Chunking)"]
+    abstractions --> storage & embeddings & chunking
+    storage --> chroma
+    embeddings --> xenova
+    chunking --> langchain & chonkie & builtin
+
 ```
 
 ## 🚀 Quick Start
@@ -79,6 +94,10 @@ STORAGE_NAME=chroma
 STORAGE_OPTIONS={"url":"http://localhost:8000"}
 EMBEDDINGS_NAME=xenova
 EMBEDDINGS_OPTIONS={"model":"Xenova/all-MiniLM-L6-v2","maxBatchSize":50}
+
+# Chunking (default: LangChain recursive)
+CHUNKING_NAME=langchain
+CHUNKING_OPTIONS={"strategy":"recursive","chunkSize":3000,"chunkOverlap":150}
 
 # Start servers
 # Start server (Upload + MCP on the same port)
@@ -105,16 +124,18 @@ bun run upload-server:prod
 
 ### Environment Variables
 
-| Variable             | Type   | Description                                                                                                |
-| -------------------- | ------ | ---------------------------------------------------------------------------------------------------------- |
-| `HTTP_PORT`          | number | Upload server port (default: 3001 in examples, config default 8787)                                        |
-| `STORAGE_NAME`       | string | Storage provider name (e.g., `chroma`)                                                                     |
-| `STORAGE_OPTIONS`    | JSON   | Provider-specific options as JSON (e.g., `{ "url": "http://localhost:8000" }` or `{ "projectId": "..." }`) |
-| `EMBEDDINGS_NAME`    | string | Embeddings provider name (e.g., `xenova`)                                                                  |
-| `EMBEDDINGS_OPTIONS` | JSON   | Provider-specific options as JSON (e.g., `{ "model": "Xenova/all-MiniLM-L6-v2" }`)                         |
-| `CHUNK_SIZE`         | number | Target chunk size for splitting documents (default: 1000)                                                  |
-| `CHUNK_OVERLAP`      | number | Overlap between chunks in characters (default: 200)                                                        |
-| `MAX_CHUNK_SIZE`     | number | Hard cap for chunk size (default: 2000)                                                                    |
+| Variable             | Type   | Description                                                                                                              |
+| -------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------ |
+| `HTTP_PORT`          | number | Upload server port (default: 3001 in examples, config default 8787)                                                      |
+| `STORAGE_NAME`       | string | Storage provider name (e.g., `chroma`)                                                                                   |
+| `STORAGE_OPTIONS`    | JSON   | Provider-specific options as JSON (e.g., `{ "url": "http://localhost:8000" }` or `{ "projectId": "..." }`)               |
+| `EMBEDDINGS_NAME`    | string | Embeddings provider name (e.g., `xenova`)                                                                                |
+| `EMBEDDINGS_OPTIONS` | JSON   | Provider-specific options as JSON (e.g., `{ "model": "Xenova/all-MiniLM-L6-v2" }`)                                       |
+| `CHUNKING_NAME`      | string | Chunking provider name: `langchain` (default), `chonkie`, or `builtin`                                                   |
+| `CHUNKING_OPTIONS`   | JSON   | Provider-specific chunking options as JSON (e.g., `{ "strategy": "recursive", "chunkSize": 3000, "chunkOverlap": 150 }`) |
+| `CHUNK_SIZE`         | number | Back-compat: target chunk size (default: 3000)                                                                           |
+| `CHUNK_OVERLAP`      | number | Back-compat: overlap between chunks (default: 150)                                                                       |
+| `MAX_CHUNK_SIZE`     | number | Back-compat: hard cap for chunk size (default: 5000)                                                                     |
 
 See `.env.example` for complete configuration options.
 
@@ -164,6 +185,10 @@ app/
 ├── index.ts                     # Starts HTTP Upload + MCP server
 ├── config/
 │   └── app-config.ts            # Zod-validated, provider-agnostic config
+├── chunking/                    # Chunking interface, factory, and providers
+│   ├── chunker-interface.ts
+│   ├── chunking-factory.ts
+│   └── providers/               # Providers: langchain (default), chonkie, builtin
 ├── storage/
 │   ├── storage-interface.ts     # Storage interface
 │   ├── chroma-storage.ts        # ChromaDB implementation
@@ -175,7 +200,7 @@ app/
 ├── server/
 │   └── mcp-server.ts            # MCP tools + SSE transport (/sse, /messages)
 ├── ingest/
-│   └── chunker.ts               # Document chunking
+│   └── chunker.ts               # Ingestion entrypoint; uses chunking service
 └── parsers/
     ├── pdf.ts                   # PDF parser
     ├── html.ts                  # HTML parser
@@ -351,9 +376,11 @@ EMBEDDINGS_NAME=xenova
 EMBEDDINGS_OPTIONS={"model":"Xenova/all-MiniLM-L6-v2","maxBatchSize":50}
 
 # Chunking
-CHUNK_SIZE=1000
-CHUNK_OVERLAP=200
-MAX_CHUNK_SIZE=2000
+CHUNKING_NAME=langchain
+CHUNKING_OPTIONS={"strategy":"recursive","chunkSize":3000,"chunkOverlap":150}
+CHUNK_SIZE=3000
+CHUNK_OVERLAP=150
+MAX_CHUNK_SIZE=5000
 ```
 
 ## Development
@@ -398,8 +425,6 @@ bun run typecheck          # Type checking
 
 - Xenova model downloads on first run; allow network access once if needed.
 - Adjust `EMBEDDINGS_OPTIONS` (e.g., `maxBatchSize`) if you see memory warnings.
-
-
 
 ## Future Enhancements
 

@@ -12,6 +12,7 @@ export class SSEElysiaTransport implements Transport {
   private _encoder = new TextEncoder();
   private _stream: ReadableStream<Uint8Array>;
   private _controller!: ReadableStreamDefaultController<Uint8Array>;
+  private _heartbeatTimer: number | undefined;
 
   onclose?: () => void;
   onerror?: (error: Error) => void;
@@ -26,6 +27,11 @@ export class SSEElysiaTransport implements Transport {
       },
       cancel: () => {
         this._isConnected = false;
+        // Stop heartbeat when stream is cancelled by client
+        if (this._heartbeatTimer !== undefined) {
+          clearInterval(this._heartbeatTimer);
+          this._heartbeatTimer = undefined;
+        }
         this.onclose?.();
       },
     });
@@ -63,6 +69,44 @@ export class SSEElysiaTransport implements Transport {
         `${encodeURI(this._endpoint)}?sessionId=${this._sessionId}`
       );
       console.log(`[Transport:${this._sessionId}] Endpoint event sent`);
+
+      // Start periodic heartbeat to keep the SSE connection alive
+      // Sends an SSE comment line ": keep-alive" every 30 seconds
+      this._heartbeatTimer = setInterval(() => {
+        if (!this._isConnected) return;
+        try {
+          this._controller.enqueue(this._encoder.encode(`: keep-alive\n\n`));
+        } catch (error) {
+          console.error(
+            `[Transport:${this._sessionId}] Error sending heartbeat:`,
+            error
+          );
+          if (this._heartbeatTimer !== undefined) {
+            clearInterval(this._heartbeatTimer as number);
+            this._heartbeatTimer = undefined;
+          }
+          const wasConnected = this._isConnected;
+          this._isConnected = false;
+          if (wasConnected) this.onclose?.();
+        }
+      }, 30_000) as unknown as number;
+
+      // Listen for client disconnect via request abort signal
+      (this._ctx.request.signal as AbortSignal).addEventListener("abort", () => {
+        console.log(
+          `[Transport:${this._sessionId}] Request aborted by client (disconnect)`
+        );
+        if (!this._isConnected) return;
+        this._isConnected = false;
+        if (this._heartbeatTimer !== undefined) {
+          clearInterval(this._heartbeatTimer);
+          this._heartbeatTimer = undefined;
+        }
+        try {
+          this._controller.close();
+        } catch {}
+        this.onclose?.();
+      });
     } catch (error) {
       console.error(
         `[Transport:${this._sessionId}] Error starting transport:`,
@@ -91,7 +135,13 @@ export class SSEElysiaTransport implements Transport {
         `[Transport:${this._sessionId}] Error sending event:`,
         error
       );
+      if (this._heartbeatTimer !== undefined) {
+        clearInterval(this._heartbeatTimer);
+        this._heartbeatTimer = undefined;
+      }
+      const wasConnected = this._isConnected;
       this._isConnected = false;
+      if (wasConnected) this.onclose?.();
       this.onerror?.(error instanceof Error ? error : new Error(String(error)));
     }
   }
@@ -154,6 +204,11 @@ export class SSEElysiaTransport implements Transport {
     console.log(`[Transport:${this._sessionId}] Closing transport`);
 
     this._isConnected = false;
+    // Stop heartbeat on close
+    if (this._heartbeatTimer !== undefined) {
+      clearInterval(this._heartbeatTimer);
+      this._heartbeatTimer = undefined;
+    }
     this.onclose?.();
   }
 

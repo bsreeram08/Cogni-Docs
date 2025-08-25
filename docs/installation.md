@@ -26,10 +26,15 @@ STORAGE_NAME=chroma
 STORAGE_OPTIONS={"url":"http://localhost:8000"}
 EMBEDDINGS_NAME=xenova
 EMBEDDINGS_OPTIONS={"model":"Xenova/all-MiniLM-L6-v2","maxBatchSize":50}
+ 
+# Chunking (default: LangChain recursive)
+CHUNKING_NAME=langchain
+CHUNKING_OPTIONS={"strategy":"recursive","chunkSize":3000,"chunkOverlap":150}
 ```
 Notes:
 - Storage and embeddings are provider-agnostic; see `.env.example` for all options.
 - `HTTP_PORT` controls the upload/MCP server port.
+- Chunking is pluggable via `CHUNKING_NAME` (`langchain` default, `chonkie`, or `builtin`).
 
 ## 4) Start Dependencies (ChromaDB)
 If using ChromaDB locally:

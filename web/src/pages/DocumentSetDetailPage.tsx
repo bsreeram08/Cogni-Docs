@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label";
+import { FileUploader } from "@/components/file-uploader";
 import type { DocumentSet, Document } from "@/types";
 import { apiService } from "@/services/api";
 import {
@@ -36,6 +37,8 @@ export const DocumentSetDetailPage: React.FC = () => {
   const [documents, setDocuments] = useState<Document[]>([]);
   const [copiedSetId, setCopiedSetId] = useState(false);
   const [deletingDocId, setDeletingDocId] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const uploaderRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (!setId) {
@@ -125,6 +128,39 @@ export const DocumentSetDetailPage: React.FC = () => {
     }
   };
 
+  const handleFilesSelected = async (
+    incoming: FileList | File[]
+  ): Promise<void> => {
+    if (!setId) return;
+    setIsUploading(true);
+    try {
+      let fileList: FileList;
+      if (Array.isArray(incoming)) {
+        const dt = new DataTransfer();
+        incoming.forEach((file) => dt.items.add(file));
+        fileList = dt.files;
+      } else {
+        fileList = incoming;
+      }
+
+      await apiService.uploadDocuments(setId, fileList);
+
+      // Refresh list after successful upload
+      const docs = await apiService.getDocuments(setId);
+      setDocuments(docs as unknown as Document[]);
+      setDocumentSet((prev) => (prev ? { ...prev, documentCount: docs.length } : prev));
+    } catch (error) {
+      console.error("Failed to upload documents:", error);
+      const msg =
+        error instanceof Error
+          ? error.message
+          : "Failed to upload documents. Please try again.";
+      alert(msg);
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
   if (!documentSet) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -174,7 +210,12 @@ export const DocumentSetDetailPage: React.FC = () => {
                 </p>
               </div>
             </div>
-            <Button className="gap-2 w-full sm:w-auto">
+            <Button
+              className="gap-2 w-full sm:w-auto"
+              onClick={() =>
+                uploaderRef.current?.scrollIntoView({ behavior: "smooth", block: "center" })
+              }
+            >
               <PlusIcon className="h-4 w-4" />
               Add Documents
             </Button>
@@ -267,6 +308,22 @@ export const DocumentSetDetailPage: React.FC = () => {
 
           {/* Documents List */}
           <div className="lg:col-span-3">
+            <div ref={uploaderRef}>
+              <Card className="mb-8">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <PlusIcon className="h-5 w-5" />
+                    Add Documents
+                  </CardTitle>
+                  <CardDescription>
+                    Drag and drop files or click to browse. Supports PDF, TXT, HTML, and Markdown files.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <FileUploader multiple disabled={isUploading} onFilesSelected={handleFilesSelected} />
+                </CardContent>
+              </Card>
+            </div>
             <Card>
               <CardHeader>
                 <div className="flex items-center justify-between">
@@ -300,7 +357,12 @@ export const DocumentSetDetailPage: React.FC = () => {
                       Upload your first document to start building your
                       knowledge base.
                     </p>
-                    <Button className="gap-2">
+                    <Button
+                      className="gap-2"
+                      onClick={() =>
+                        uploaderRef.current?.scrollIntoView({ behavior: "smooth", block: "center" })
+                      }
+                    >
                       <PlusIcon className="h-4 w-4" />
                       Add Documents
                     </Button>

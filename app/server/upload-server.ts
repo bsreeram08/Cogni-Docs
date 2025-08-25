@@ -18,7 +18,8 @@ export function registerRoutes(app: Elysia) {
     // Per-request tracing context
     .derive(({ request, set, path }) => {
       const headerId = request.headers.get("x-request-id");
-      const reqId = headerId && headerId.length > 0 ? headerId : crypto.randomUUID();
+      const reqId =
+        headerId && headerId.length > 0 ? headerId : crypto.randomUUID();
       const startTime = Date.now();
       set.headers["x-request-id"] = reqId;
       return { reqId, startTime } as const;
@@ -31,18 +32,34 @@ export function registerRoutes(app: Elysia) {
     .onAfterHandle(({ request, path, set, reqId, startTime }) => {
       const durationMs = Date.now() - startTime;
       const status = typeof set.status === "number" ? set.status : 200;
-      console.log(`[${reqId}] <-- ${request.method} ${path} ${status} ${durationMs}ms`);
+      console.log(
+        `[${reqId}] <-- ${request.method} ${path} ${status} ${durationMs}ms`
+      );
     })
     // Standardized error logging
     .onError(({ code, error, request, set, path, reqId, startTime }) => {
-      const durationMs = typeof startTime === "number" ? Date.now() - startTime : 0;
-      const message = error instanceof Error ? error.message : "Internal server error";
-      console.error(`[${reqId}] [${code}] ${request.method} ${path} ${durationMs}ms - ${message}`);
+      const durationMs =
+        typeof startTime === "number" ? Date.now() - startTime : 0;
+      const message =
+        error instanceof Error ? error.message : "Internal server error";
+      console.error(
+        `[${reqId}] [${code}] ${request.method} ${path} ${durationMs}ms - ${message}`
+      );
       if (error instanceof Error && error.stack) console.error(error.stack);
       set.status = 500;
       return { error: message };
     })
-
+    // Basic info route
+    .get("/", () => ({
+      name: "Bun Elysia MCP Server",
+      version: "1.0.0",
+      description: "Model Context Protocol server using Bun and Elysia",
+      endpoints: {
+        "/": "This info",
+        "/sse": "SSE endpoint for MCP connections",
+        "/messages": "Message endpoint for MCP clients",
+      },
+    }))
     // Health check endpoint with service status
     .get(
       "/health",

@@ -5,20 +5,14 @@
 import { parseText } from "../parsers/text.js";
 import { parseHtml } from "../parsers/html.js";
 import { parsePdf } from "../parsers/pdf.js";
-import { chunkText } from "../ingest/chunker.js";
 import {
   getStorageService,
   getEmbeddingService,
   getConfig,
+  getChunkerService,
 } from "../services/service-provider.js";
 import { withRetry } from "../utils/retry.js";
-import type {
-  UUID,
-  DocumentMeta,
-  Chunk,
-  EmbeddingRecord,
-  MimeType,
-} from "../types.js";
+import type { UUID, DocumentMeta, MimeType } from "../types.js";
 import ids from "../utils/ids.js";
 
 export interface ProcessDocumentInput {
@@ -84,18 +78,36 @@ export const createDocumentProcessor = (): DocumentProcessor => {
     };
 
     // Step 3: Chunk the text (optimize for large documents)
-    const chunkSize =
+    type ChunkingOptions = {
+      readonly defaultSize?: number;
+      readonly maxSize?: number;
+      readonly overlap?: number;
+      readonly chunkSize?: number;
+      readonly chunkOverlap?: number;
+      readonly strategy?: string;
+    };
+    const opts = (config.chunking.options || {}) as Partial<ChunkingOptions>;
+    const computedSize =
       text.length > 100000
-        ? config.chunking.maxSize
-        : config.chunking.defaultSize;
-    const overlap = config.chunking.overlap;
+        ? opts.maxSize ?? opts.chunkSize ?? 2000
+        : opts.defaultSize ?? opts.chunkSize ?? 1000;
+    const computedOverlap = opts.overlap ?? opts.chunkOverlap ?? 200;
 
-    const chunkResult = chunkText(
-      { chunkSize, overlap },
-      { setId: input.setId, documentId, text }
+    const chunker = getChunkerService();
+    const chunkResult = await chunker.chunk(
+      { setId: input.setId, documentId, text },
+      {
+        chunkSize: computedSize,
+        chunkOverlap: computedOverlap,
+        strategy: opts.strategy,
+      }
     );
     console.log(
-      `Created ${chunkResult.chunks.length} chunks (${chunkSize} chars per chunk)`
+      `Created ${chunkResult.chunks.length} chunks (${
+        chunkResult.info.chunkSize ?? computedSize
+      } chars per chunk) using ${chunkResult.info.provider}/${
+        chunkResult.info.strategy
+      }`
     );
 
     // Step 4: Generate embeddings with retry and batching, then store documents with embeddings
@@ -130,6 +142,15 @@ export const createDocumentProcessor = (): DocumentProcessor => {
       );
 
       // Prepare storage documents with embeddings
+      const totalChunks = chunks.length;
+      const providerTag = `provider:${chunkResult.info.provider}`;
+      const strategyTag = `strategy:${chunkResult.info.strategy}`;
+      const sizeTag = `chunk_size:${
+        chunkResult.info.chunkSize ?? computedSize
+      }`;
+      const overlapTag = `chunk_overlap:${
+        chunkResult.info.chunkOverlap ?? computedOverlap
+      }`;
       const documents = batch.map((chunk, index) => ({
         id: chunk.id,
         content: chunk.text,
@@ -143,7 +164,7 @@ export const createDocumentProcessor = (): DocumentProcessor => {
           created_at: documentMeta.createdAt,
           // chunk-level fields
           document_type: "unknown",
-          keywords: [],
+          keywords: [providerTag, strategyTag, sizeTag, overlapTag],
           chunk_index: chunk.ordinal,
         },
       }));
