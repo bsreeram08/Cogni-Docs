@@ -36,10 +36,13 @@ Notes:
 
 ### Chunking updates
 
-- Default chunker is now **LangChain** with the recursive strategy.
+- Default chunker is **LangChain** with the recursive strategy.
 - Recommended defaults: `chunkSize=3000`, `chunkOverlap=150`.
 - Configure via `CHUNKING_NAME=langchain` and `CHUNKING_OPTIONS={"strategy":"recursive","chunkSize":3000,"chunkOverlap":150}`.
-- The Chonkie provider was refined to normalize outputs (e.g., `RecursiveChunk`) to strings so `Chunk.text` is always a string.
+- Additional strategies in the LangChain provider:
+  - `intelligent`: content-type–aware splitting (adapts separators/size for code, markdown, html, etc.).
+  - `semantic`: initial split + adjacent-merge when cosine similarity of embeddings is above a threshold.
+- The Chonkie provider normalizes outputs to strings so `Chunk.text` is always a string.
 
 ## 🏗️ Architecture
 
@@ -138,6 +141,35 @@ bun run upload-server:prod
 | `MAX_CHUNK_SIZE`     | number | Back-compat: hard cap for chunk size (default: 5000)                                                                     |
 
 See `.env.example` for complete configuration options.
+
+### Chunking strategies (LangChain)
+
+- `recursive` (default):
+  ```bash
+  CHUNKING_NAME=langchain
+  CHUNKING_OPTIONS={"strategy":"recursive","chunkSize":3000,"chunkOverlap":150}
+  ```
+- `intelligent` (content-type aware: code/markdown/html get tuned separators & sizes):
+  ```bash
+  CHUNKING_NAME=langchain
+  CHUNKING_OPTIONS={"strategy":"intelligent","chunkSize":3000,"chunkOverlap":150,"contentTypeAware":true}
+  ```
+- `semantic` (adjacent merge by embedding similarity):
+  ```bash
+  CHUNKING_NAME=langchain
+  CHUNKING_OPTIONS={
+    "strategy":"semantic",
+    "chunkSize":3000,
+    "chunkOverlap":150,
+    "contentTypeAware":true,
+    "semanticSimilarityThreshold":0.9,
+    "semanticMaxMergeChars":6000,
+    "semanticBatchSize":64
+  }
+  ```
+  Notes:
+  - Tweak `semanticSimilarityThreshold` (typ. 0.85–0.92) per corpus.
+  - If embeddings are unavailable, the provider should fall back to the initial split (no merges).
 
 Deprecated (still parsed for backward compatibility): `STORAGE_PROVIDER`, `EMBEDDING_PROVIDER`, `CHROMA_URL`, `XENOVA_MODEL`, `MAX_BATCH_SIZE`, `UPLOAD_SERVER_PORT`, `UPLOAD_SERVER_HOST`.
 
