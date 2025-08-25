@@ -141,8 +141,6 @@ export const createDocumentProcessor = (): DocumentProcessor => {
         { maxAttempts: 5, baseDelayMs: 2000, maxDelayMs: 60000 }
       );
 
-      // Prepare storage documents with embeddings
-      const totalChunks = chunks.length;
       const providerTag = `provider:${chunkResult.info.provider}`;
       const strategyTag = `strategy:${chunkResult.info.strategy}`;
       const sizeTag = `chunk_size:${

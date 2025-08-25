@@ -11,7 +11,6 @@
   "private": true,
   "main": "app/index.ts",
   "scripts": {
-    "dev": "bun run --watch app/index.ts",
     "upload-server:dev": "bun run --watch app/index.ts",
     "upload-server:prod": "bun run app/index.ts",
     "start": "bun run app/index.ts",
