@@ -25,7 +25,7 @@ type Options = z.infer<typeof OptionsSchema>;
 const extractText = (item: unknown): string | null => {
   if (typeof item === "string") return item;
   if (item && typeof item === "object" && "text" in item) {
-    const text = (item as any).text;
+    const text = item.text;
     return typeof text === "string" ? text : null;
   }
   return null;

@@ -53,7 +53,7 @@ export class SSEElysiaTransport implements Transport {
         headers: {
           "content-type": "text/event-stream",
           "cache-control": "no-cache",
-          "connection": "keep-alive",
+          connection: "keep-alive",
           // Prevent proxy buffering (e.g., nginx) which can break SSE
           "x-accel-buffering": "no",
         },
@@ -92,21 +92,24 @@ export class SSEElysiaTransport implements Transport {
       }, 30_000) as unknown as number;
 
       // Listen for client disconnect via request abort signal
-      (this._ctx.request.signal as AbortSignal).addEventListener("abort", () => {
-        console.log(
-          `[Transport:${this._sessionId}] Request aborted by client (disconnect)`
-        );
-        if (!this._isConnected) return;
-        this._isConnected = false;
-        if (this._heartbeatTimer !== undefined) {
-          clearInterval(this._heartbeatTimer);
-          this._heartbeatTimer = undefined;
+      (this._ctx.request.signal as AbortSignal).addEventListener(
+        "abort",
+        () => {
+          console.log(
+            `[Transport:${this._sessionId}] Request aborted by client (disconnect)`
+          );
+          if (!this._isConnected) return;
+          this._isConnected = false;
+          if (this._heartbeatTimer !== undefined) {
+            clearInterval(this._heartbeatTimer);
+            this._heartbeatTimer = undefined;
+          }
+          try {
+            this._controller.close();
+          } catch {}
+          this.onclose?.();
         }
-        try {
-          this._controller.close();
-        } catch {}
-        this.onclose?.();
-      });
+      );
     } catch (error) {
       console.error(
         `[Transport:${this._sessionId}] Error starting transport:`,

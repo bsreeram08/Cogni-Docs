@@ -13,6 +13,7 @@ This version introduces a complete backend abstraction layer that allows you to 
 ### **Embedding Options**
 
 - **Xenova/Transformers** - Local, privacy-focused embeddings
+- **Transformers.js (@huggingface/transformers)** - Official HF JS runtime (WASM by default on server)
 
 ### Provider registry and provider-agnostic configuration (New)
 
@@ -26,6 +27,10 @@ STORAGE_OPTIONS={"url":"http://localhost:8000"}
 # Embeddings
 EMBEDDINGS_NAME=xenova
 EMBEDDINGS_OPTIONS={"model":"Xenova/all-MiniLM-L6-v2","maxBatchSize":50}
+
+# Alternative (Transformers.js)
+# EMBEDDINGS_NAME=transformersjs
+# EMBEDDINGS_OPTIONS={"model":"Xenova/all-MiniLM-L6-v2","device":"wasm","pooling":"mean","normalize":true,"maxBatchSize":50}
 ```
 
 Notes:
@@ -455,8 +460,9 @@ bun run typecheck          # Type checking
 
 ### Embedding model setup
 
-- Xenova model downloads on first run; allow network access once if needed.
+- Xenova/Transformers.js models download on first run; allow network access once if needed.
 - Adjust `EMBEDDINGS_OPTIONS` (e.g., `maxBatchSize`) if you see memory warnings.
+- If you change model/provider, embedding dimensions may differ. Use a fresh collection or reingest to avoid mixing dimensions.
 
 ## Future Enhancements
 

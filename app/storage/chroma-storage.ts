@@ -116,7 +116,7 @@ export class ChromaStorage implements StorageService {
       const docsById = new Map<string, ListedDocument>();
       for (let offset = 0; offset < total; offset += pageSize) {
         // Fetch only metadatas to minimize payload
-        const batch: any = await (collection as any).get({
+        const batch = await collection.get({
           limit: pageSize,
           offset,
           include: ["metadatas"],
@@ -126,17 +126,15 @@ export class ChromaStorage implements StorageService {
           (batch?.metadatas as ReadonlyArray<Record<string, unknown>>) || [];
 
         for (const md of metadatas) {
-          const docId = String((md as any).document_id ?? "");
+          const docId = String(md.document_id ?? "");
           if (!docId || docsById.has(docId)) continue;
 
           const item: ListedDocument = {
             id: docId,
-            source_file: String((md as any).source_file ?? "unknown"),
-            mime_type: String((md as any).mime_type ?? "text/plain"),
-            size_bytes: Number((md as any).size_bytes ?? 0),
-            created_at: String(
-              (md as any).created_at ?? new Date().toISOString()
-            ),
+            source_file: String(md.source_file ?? "unknown"),
+            mime_type: String(md.mime_type ?? "text/plain"),
+            size_bytes: Number(md.size_bytes ?? 0),
+            created_at: String(md.created_at ?? new Date().toISOString()),
           };
           docsById.set(docId, item);
         }
