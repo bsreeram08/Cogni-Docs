@@ -65,9 +65,7 @@ async function expectOk(res: Response, message: string): Promise<void> {
   if (!res.ok) {
     const body = await safeJson(res);
     throw new Error(
-      `${message} failed: HTTP ${res.status} ${
-        res.statusText
-      } - ${JSON.stringify(body)}`
+      `${message} failed: HTTP ${res.status} ${res.statusText} - ${JSON.stringify(body)}`,
     );
   }
 }
@@ -89,7 +87,7 @@ async function run(): Promise<void> {
   await expectOk(healthRes, "Health check");
   const health: HealthResponse = (await healthRes.json()) as HealthResponse;
   logger.info(
-    `   status=${health.status}, storage=${health.storage.provider}, embeddings=${health.embeddings.provider}`
+    `   status=${health.status}, storage=${health.storage.provider}, embeddings=${health.embeddings.provider}`,
   );
 
   // 2) List sets (empty or existing)
@@ -110,18 +108,14 @@ async function run(): Promise<void> {
     body: JSON.stringify({ name: setName, description: "Demo set" }),
   });
   await expectOk(createRes, "Create set");
-  const created: CreateSetResponse =
-    (await createRes.json()) as CreateSetResponse;
+  const created: CreateSetResponse = (await createRes.json()) as CreateSetResponse;
   logger.info(`   created id=${created.id}`);
 
   // 4) Get set by id
   logger.info("4) GET /sets/:setId");
-  const getSetRes = await fetch(
-    `${BASE_URL}/sets/${encodeURIComponent(created.id)}`
-  );
+  const getSetRes = await fetch(`${BASE_URL}/sets/${encodeURIComponent(created.id)}`);
   await expectOk(getSetRes, "Get set");
-  const got: CreateSetResponse | { readonly error: string } =
-    (await getSetRes.json()) as any;
+  const got: CreateSetResponse | { readonly error: string } = (await getSetRes.json()) as any;
   if ("error" in got) throw new Error(`Get set returned error: ${got.error}`);
   logger.info(`   got id=${got.id}`);
 
@@ -133,33 +127,25 @@ async function run(): Promise<void> {
   form.append("files", file1, "hello.txt");
   form.append("files", file2, "another.txt");
 
-  const uploadRes = await fetch(
-    `${BASE_URL}/sets/${encodeURIComponent(created.id)}/upload`,
-    {
-      method: "POST",
-      body: form,
-    }
-  );
+  const uploadRes = await fetch(`${BASE_URL}/sets/${encodeURIComponent(created.id)}/upload`, {
+    method: "POST",
+    body: form,
+  });
   await expectOk(uploadRes, "Upload files");
   const uploadJson = (await uploadRes.json()) as {
     readonly message: string;
     readonly results: readonly UploadResultItem[];
   };
   logger.info(`   ${uploadJson.message}`);
-  if (!uploadJson.results?.length)
-    throw new Error("Upload did not return any results");
+  if (!uploadJson.results?.length) throw new Error("Upload did not return any results");
 
   // 6) List documents in set
   logger.info("6) GET /sets/:setId/documents");
-  const docsRes = await fetch(
-    `${BASE_URL}/sets/${encodeURIComponent(created.id)}/documents`
-  );
+  const docsRes = await fetch(`${BASE_URL}/sets/${encodeURIComponent(created.id)}/documents`);
   await expectOk(docsRes, "List documents");
   const docsJson = await safeJson(docsRes);
   if (!isDocumentsResponse(docsJson)) {
-    throw new Error(
-      `Unexpected documents response: ${JSON.stringify(docsJson)}`
-    );
+    throw new Error(`Unexpected documents response: ${JSON.stringify(docsJson)}`);
   }
   logger.info(`   documents=${docsJson.documents.length}`);
   if (docsJson.documents.length === 0) {
@@ -171,11 +157,11 @@ async function run(): Promise<void> {
   const firstDocId = uploadJson.results[0].documentId;
   const delRes = await fetch(
     `${BASE_URL}/sets/${encodeURIComponent(
-      created.id
+      created.id,
     )}/documents/${encodeURIComponent(firstDocId)}`,
     {
       method: "DELETE",
-    }
+    },
   );
   await expectOk(delRes, "Delete document");
   const delJson = (await delRes.json()) as {
@@ -191,9 +177,7 @@ async function run(): Promise<void> {
   if (notFoundRes.status !== 404) {
     const nf = await safeJson(notFoundRes);
     throw new Error(
-      `Expected 404 for nonexistent set, got ${
-        notFoundRes.status
-      }: ${JSON.stringify(nf)}`
+      `Expected 404 for nonexistent set, got ${notFoundRes.status}: ${JSON.stringify(nf)}`,
     );
   }
   logger.info("   got 404 as expected");

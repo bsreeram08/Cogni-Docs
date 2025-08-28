@@ -1,13 +1,7 @@
 import React, { useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
@@ -62,16 +56,12 @@ export const CreateDocumentSetPage: React.FC = () => {
   const retryFile = useCallback((fileId: string) => {
     setSelectedFiles((prev) =>
       prev.map((f) =>
-        f.id === fileId
-          ? { ...f, status: "pending" as const, progress: 0, error: undefined }
-          : f
-      )
+        f.id === fileId ? { ...f, status: "pending" as const, progress: 0, error: undefined } : f,
+      ),
     );
   }, []);
 
-  const handleFileInputChange = (
-    e: React.ChangeEvent<HTMLInputElement>
-  ): void => {
+  const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
     if (e.target.files && e.target.files.length > 0) {
       addFiles(e.target.files);
     }
@@ -102,7 +92,7 @@ export const CreateDocumentSetPage: React.FC = () => {
         addFiles(files);
       }
     },
-    [addFiles]
+    [addFiles],
   );
 
   const getFileIcon = (filename: string): React.ReactNode => {
@@ -163,9 +153,7 @@ export const CreateDocumentSetPage: React.FC = () => {
       navigate(`/document-set/${documentSet.id}`);
     } catch (error) {
       const errorMessage =
-        error instanceof Error
-          ? error.message
-          : "Failed to create document set. Please try again.";
+        error instanceof Error ? error.message : "Failed to create document set. Please try again.";
       setGlobalError(errorMessage);
     } finally {
       setIsCreating(false);
@@ -178,21 +166,14 @@ export const CreateDocumentSetPage: React.FC = () => {
       <div className="border-b bg-card/50 backdrop-blur supports-[backdrop-filter]:bg-card/50">
         <div className="container max-w-4xl mx-auto px-4 py-6">
           <div className="flex items-center gap-4">
-            <Button
-              variant="ghost"
-              onClick={() => navigate("/dashboard")}
-              className="gap-2"
-            >
+            <Button variant="ghost" onClick={() => navigate("/dashboard")} className="gap-2">
               <ArrowLeftIcon className="h-4 w-4" />
               Back to Dashboard
             </Button>
             <div className="flex-1">
-              <h1 className="text-3xl font-bold tracking-tight">
-                Create Documentation Set
-              </h1>
+              <h1 className="text-3xl font-bold tracking-tight">Create Documentation Set</h1>
               <p className="text-muted-foreground">
-                Upload documents and create a new documentation set for your MCP
-                server
+                Upload documents and create a new documentation set for your MCP server
               </p>
             </div>
           </div>
@@ -206,9 +187,7 @@ export const CreateDocumentSetPage: React.FC = () => {
           <Card>
             <CardHeader>
               <CardTitle>Basic Information</CardTitle>
-              <CardDescription>
-                Provide basic details about your documentation set
-              </CardDescription>
+              <CardDescription>Provide basic details about your documentation set</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-2">
@@ -246,8 +225,7 @@ export const CreateDocumentSetPage: React.FC = () => {
                 Upload Documents
               </CardTitle>
               <CardDescription>
-                Drag and drop files or click to browse. Supports PDF, TXT, HTML,
-                and Markdown files.
+                Drag and drop files or click to browse. Supports PDF, TXT, HTML, and Markdown files.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -265,9 +243,7 @@ export const CreateDocumentSetPage: React.FC = () => {
                 >
                   <div className="flex flex-col items-center gap-4">
                     <div
-                      className={`rounded-full p-4 ${
-                        isDragOver ? "bg-primary/10" : "bg-muted"
-                      }`}
+                      className={`rounded-full p-4 ${isDragOver ? "bg-primary/10" : "bg-muted"}`}
                     >
                       <UploadCloudIcon
                         className={`h-8 w-8 ${
@@ -277,9 +253,7 @@ export const CreateDocumentSetPage: React.FC = () => {
                     </div>
                     <div className="space-y-2">
                       <h3 className="font-medium">
-                        {isDragOver
-                          ? "Drop files here"
-                          : "Click to upload or drag files here"}
+                        {isDragOver ? "Drop files here" : "Click to upload or drag files here"}
                       </h3>
                       <p className="text-sm text-muted-foreground">
                         PDF, TXT, HTML, Markdown files up to 10MB each
@@ -314,8 +288,7 @@ export const CreateDocumentSetPage: React.FC = () => {
                     <div className="flex items-center justify-between">
                       <h4 className="font-medium">Selected Files</h4>
                       <Badge variant="secondary">
-                        {selectedFiles.length}{" "}
-                        {selectedFiles.length === 1 ? "file" : "files"}
+                        {selectedFiles.length} {selectedFiles.length === 1 ? "file" : "files"}
                       </Badge>
                     </div>
                     <div className="grid gap-3">
@@ -329,9 +302,7 @@ export const CreateDocumentSetPage: React.FC = () => {
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center justify-between gap-2">
-                              <p className="font-medium truncate">
-                                {fileWithStatus.file.name}
-                              </p>
+                              <p className="font-medium truncate">{fileWithStatus.file.name}</p>
                               <div className="flex items-center gap-2">
                                 {fileWithStatus.status === "success" && (
                                   <CheckCircleIcon className="h-4 w-4 text-green-500" />
@@ -349,12 +320,11 @@ export const CreateDocumentSetPage: React.FC = () => {
                                 {formatFileSize(fileWithStatus.file.size)}
                               </p>
                               <div className="flex items-center gap-1">
-                                {fileWithStatus.status === "error" &&
-                                  fileWithStatus.error && (
-                                    <span className="text-xs text-destructive mr-2">
-                                      {fileWithStatus.error}
-                                    </span>
-                                  )}
+                                {fileWithStatus.status === "error" && fileWithStatus.error && (
+                                  <span className="text-xs text-destructive mr-2">
+                                    {fileWithStatus.error}
+                                  </span>
+                                )}
                                 {fileWithStatus.status === "error" && (
                                   <Button
                                     type="button"
@@ -371,9 +341,7 @@ export const CreateDocumentSetPage: React.FC = () => {
                                   variant="ghost"
                                   size="sm"
                                   onClick={() => removeFile(fileWithStatus.id)}
-                                  disabled={
-                                    fileWithStatus.status === "uploading"
-                                  }
+                                  disabled={fileWithStatus.status === "uploading"}
                                   className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
                                 >
                                   <XIcon className="h-3 w-3" />
@@ -381,10 +349,7 @@ export const CreateDocumentSetPage: React.FC = () => {
                               </div>
                             </div>
                             {fileWithStatus.status === "uploading" && (
-                              <Progress
-                                value={fileWithStatus.progress}
-                                className="h-1 mt-2"
-                              />
+                              <Progress value={fileWithStatus.progress} className="h-1 mt-2" />
                             )}
                           </div>
                         </div>

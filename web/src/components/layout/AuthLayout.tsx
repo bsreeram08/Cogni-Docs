@@ -19,11 +19,7 @@ interface AuthLayoutProps {
   subtitle: string;
 }
 
-export const AuthLayout: React.FC<AuthLayoutProps> = ({
-  children,
-  title,
-  subtitle,
-}) => {
+export const AuthLayout: React.FC<AuthLayoutProps> = ({ children, title, subtitle }) => {
   const features = [
     {
       icon: Brain,
@@ -42,15 +38,13 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
     {
       icon: ShieldCheck,
       title: "Enterprise Security",
-      description:
-        "Bank-grade encryption and security for your documentation and knowledge base",
+      description: "Bank-grade encryption and security for your documentation and knowledge base",
       color: "bg-orange-50 text-orange-600",
     },
     {
       icon: Zap,
       title: "Lightning Fast",
-      description:
-        "Optimized search and retrieval powered by advanced indexing and caching",
+      description: "Optimized search and retrieval powered by advanced indexing and caching",
       color: "bg-yellow-50 text-yellow-600",
     },
   ];
@@ -80,9 +74,7 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
                   <h1 className="text-2xl font-bold bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text">
                     Documentation MCP
                   </h1>
-                  <p className="text-sm text-muted-foreground">
-                    AI-Powered Knowledge Base
-                  </p>
+                  <p className="text-sm text-muted-foreground">AI-Powered Knowledge Base</p>
                 </div>
               </Link>
 
@@ -111,24 +103,18 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
                 </h2>
 
                 <p className="text-lg text-muted-foreground leading-relaxed">
-                  Upload PDFs, HTML, and text files to create searchable
-                  knowledge bases that integrate seamlessly with AI applications
-                  through MCP.
+                  Upload PDFs, HTML, and text files to create searchable knowledge bases that
+                  integrate seamlessly with AI applications through MCP.
                 </p>
               </div>
 
               {/* Stats */}
               <div className="grid grid-cols-3 gap-4">
                 {stats.map((stat, index) => (
-                  <Card
-                    key={index}
-                    className="border-0 bg-background/60 backdrop-blur"
-                  >
+                  <Card key={index} className="border-0 bg-background/60 backdrop-blur">
                     <CardContent className="p-4 text-center">
                       <div className="text-xl font-bold">{stat.number}</div>
-                      <div className="text-xs text-muted-foreground">
-                        {stat.label}
-                      </div>
+                      <div className="text-xs text-muted-foreground">{stat.label}</div>
                     </CardContent>
                   </Card>
                 ))}
@@ -162,8 +148,8 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
                     <h3 className="font-semibold">Multi-Format Support</h3>
                   </div>
                   <p className="text-sm text-muted-foreground mb-4">
-                    Our intelligent parser handles PDFs, HTML, and text
-                    documents with advanced extraction capabilities.
+                    Our intelligent parser handles PDFs, HTML, and text documents with advanced
+                    extraction capabilities.
                   </p>
                   <Badge variant="outline" className="text-xs">
                     PDF • HTML • TXT • MD
@@ -176,8 +162,7 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
           {/* Footer */}
           <div className="relative z-10 text-sm text-muted-foreground">
             <p>
-              © 2025 Documentation MCP. Built for the future of AI-powered
-              knowledge management.
+              © 2025 Documentation MCP. Built for the future of AI-powered knowledge management.
             </p>
           </div>
         </div>
@@ -187,10 +172,7 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
           <div className="mx-auto w-full max-w-md">
             {/* Mobile logo */}
             <div className="lg:hidden mb-8">
-              <Link
-                to="/"
-                className="flex items-center gap-3 justify-center group"
-              >
+              <Link to="/" className="flex items-center gap-3 justify-center group">
                 <div className="rounded-xl bg-gradient-to-br from-primary to-primary/80 p-3 shadow-lg group-hover:shadow-xl transition-shadow">
                   <BookOpen className="h-6 w-6 text-primary-foreground" />
                 </div>
@@ -198,21 +180,15 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
                   <h1 className="text-xl font-bold bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text">
                     Documentation MCP
                   </h1>
-                  <p className="text-xs text-muted-foreground">
-                    AI-Powered Knowledge Base
-                  </p>
+                  <p className="text-xs text-muted-foreground">AI-Powered Knowledge Base</p>
                 </div>
               </Link>
             </div>
 
             {/* Form header */}
             <div className="mb-8 text-center lg:text-left">
-              <h2 className="text-3xl font-bold tracking-tight mb-2">
-                {title}
-              </h2>
-              <p className="text-muted-foreground leading-relaxed">
-                {subtitle}
-              </p>
+              <h2 className="text-3xl font-bold tracking-tight mb-2">{title}</h2>
+              <p className="text-muted-foreground leading-relaxed">{subtitle}</p>
             </div>
 
             {/* Form wrapper with enhanced styling */}
@@ -236,9 +212,7 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
                     </div>
                     <div>
                       <p className="text-sm font-medium">{feature.title}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {feature.description}
-                      </p>
+                      <p className="text-xs text-muted-foreground">{feature.description}</p>
                     </div>
                   </div>
                 ))}

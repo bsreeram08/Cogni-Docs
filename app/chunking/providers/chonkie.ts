@@ -5,11 +5,7 @@
 import { z } from "zod";
 import ids from "../../utils/ids.js";
 import type { Chunk } from "../../types.js";
-import type {
-  Chunker,
-  ChunkerInput,
-  ChunkingResult,
-} from "../chunker-interface.js";
+import type { Chunker, ChunkerInput, ChunkingResult } from "../chunker-interface.js";
 import { registerChunkerProvider } from "./registry.js";
 import { RecursiveChunker, SentenceChunker, TokenChunker } from "chonkie";
 
@@ -63,9 +59,7 @@ const createChonkie = (options: Options): Chunker => {
       const rawChunks = await chunker.chunk(input.text);
       const textChunks = rawChunks
         .map(extractText)
-        .filter(
-          (text): text is string => text !== null && text.trim().length > 0
-        )
+        .filter((text): text is string => text !== null && text.trim().length > 0)
         .map((text) => text.trim());
 
       // Create chunk objects

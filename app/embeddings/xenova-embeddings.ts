@@ -12,7 +12,7 @@ import { logger } from "../utils/logger.js";
 
 type FeatureExtraction = (
   text: string,
-  options: { pooling: "mean" | "cls" | "max"; normalize: boolean }
+  options: { pooling: "mean" | "cls" | "max"; normalize: boolean },
 ) => Promise<{ data: Float32Array }>;
 
 export interface XenovaConfig {
@@ -20,20 +20,16 @@ export interface XenovaConfig {
   readonly maxBatchSize: number;
 }
 
-export const createXenovaEmbeddingService = (
-  config: XenovaConfig
-): EmbeddingService => {
+export const createXenovaEmbeddingService = (config: XenovaConfig): EmbeddingService => {
   let embeddingPipeline: FeatureExtraction | null = null;
   let modelDimensions: number = 384; // Default for all-MiniLM-L6-v2
 
   const initializePipeline = async (): Promise<FeatureExtraction> => {
     if (!embeddingPipeline) {
-      logger.info(
-        `Initializing Xenova embedding pipeline with model: ${config.model}`
-      );
+      logger.info(`Initializing Xenova embedding pipeline with model: ${config.model}`);
       embeddingPipeline = (await pipeline(
         "feature-extraction",
-        config.model
+        config.model,
       )) as unknown as FeatureExtraction;
 
       // Test to get actual dimensions
@@ -46,18 +42,13 @@ export const createXenovaEmbeddingService = (
           modelDimensions = testResult.data.length;
         }
       } catch (error) {
-        logger.warn(
-          error,
-          "Could not determine model dimensions, using default:"
-        );
+        logger.warn(error, "Could not determine model dimensions, using default:");
       }
     }
     return embeddingPipeline;
   };
 
-  const generateEmbeddings = async (
-    request: EmbeddingRequest
-  ): Promise<EmbeddingResponse> => {
+  const generateEmbeddings = async (request: EmbeddingRequest): Promise<EmbeddingResponse> => {
     if (request.texts.length === 0) {
       return { embeddings: [], dimensions: modelDimensions };
     }
@@ -75,7 +66,7 @@ export const createXenovaEmbeddingService = (
         logger.info(
           `Processing Xenova embedding batch ${
             Math.floor(i / batchSize) + 1
-          }/${Math.ceil(request.texts.length / batchSize)}`
+          }/${Math.ceil(request.texts.length / batchSize)}`,
         );
 
         for (const text of batch) {
@@ -88,9 +79,7 @@ export const createXenovaEmbeddingService = (
             if (result && result.data) {
               embeddings.push(Array.from(result.data));
             } else {
-              logger.warn(
-                `No embedding returned for text: ${text.substring(0, 50)}...`
-              );
+              logger.warn(`No embedding returned for text: ${text.substring(0, 50)}...`);
               embeddings.push(new Array(modelDimensions).fill(0));
             }
           } catch (error) {
@@ -106,7 +95,7 @@ export const createXenovaEmbeddingService = (
       }
 
       logger.info(
-        `Generated ${embeddings.length} embeddings with ${modelDimensions} dimensions using Xenova`
+        `Generated ${embeddings.length} embeddings with ${modelDimensions} dimensions using Xenova`,
       );
 
       return {
@@ -116,9 +105,7 @@ export const createXenovaEmbeddingService = (
     } catch (error) {
       console.error("Error in Xenova embedding generation:", error);
       // Return zero embeddings as fallback
-      const fallbackEmbeddings = request.texts.map(() =>
-        new Array(modelDimensions).fill(0)
-      );
+      const fallbackEmbeddings = request.texts.map(() => new Array(modelDimensions).fill(0));
       return {
         embeddings: fallbackEmbeddings,
         dimensions: modelDimensions,
@@ -134,8 +121,7 @@ export const createXenovaEmbeddingService = (
     try {
       const testResponse = await generateEmbeddings({ texts: ["test"] });
       return (
-        testResponse.embeddings.length > 0 &&
-        testResponse.embeddings[0].some((val) => val !== 0)
+        testResponse.embeddings.length > 0 && testResponse.embeddings[0].some((val) => val !== 0)
       );
     } catch (error) {
       console.error("Xenova health check failed:", error);

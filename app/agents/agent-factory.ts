@@ -14,9 +14,7 @@ export const createAgentService = (config: AppConfig): AgentService => {
   const parsed = factory.schema.parse(options);
   const instance = factory.create(parsed);
   if (instance instanceof Promise) {
-    throw new Error(
-      "Agent provider returned a Promise. Providers must create synchronously."
-    );
+    throw new Error("Agent provider returned a Promise. Providers must create synchronously.");
   }
   return instance;
 };

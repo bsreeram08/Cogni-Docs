@@ -29,9 +29,7 @@ function bootstrap() {
   logger.info("  - list_documentation_sets: List all documentation sets");
   logger.info("  - search_documentation: Search within a documentation set");
   logger.info("  - get_documentation_set: Get documentation set details");
-  logger.info(
-    "  - agentic_search: Extractive answer from top documentation results"
-  );
+  logger.info("  - agentic_search: Extractive answer from top documentation results");
   const { httpPort } = loadConfig();
   elysia.listen(httpPort, () => {
     logger.info(`Server running at http://localhost:${elysia.server?.port}`);

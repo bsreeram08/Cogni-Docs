@@ -1,13 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { DocumentSet } from "@/types";
@@ -76,18 +70,12 @@ export const DashboardPage: React.FC = () => {
             <div className="rounded-full bg-muted p-4 mb-4">
               <FolderIcon className="h-8 w-8 text-muted-foreground" />
             </div>
-            <h3 className="text-lg font-semibold mb-2">
-              No documentation sets yet
-            </h3>
+            <h3 className="text-lg font-semibold mb-2">No documentation sets yet</h3>
             <p className="text-muted-foreground mb-6 max-w-sm">
-              Get started by creating your first documentation set. Upload PDFs,
-              text files, or HTML documents to build your knowledge base.
+              Get started by creating your first documentation set. Upload PDFs, text files, or HTML
+              documents to build your knowledge base.
             </p>
-            <Button
-              onClick={handleCreateDocumentSet}
-              size="lg"
-              className="gap-2"
-            >
+            <Button onClick={handleCreateDocumentSet} size="lg" className="gap-2">
               <PlusIcon className="h-4 w-4" />
               Create Your First Set
             </Button>
@@ -146,17 +134,12 @@ export const DashboardPage: React.FC = () => {
     <div className="container mx-auto px-4 py-8">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
         <div className="space-y-1">
-          <h2 className="text-2xl font-semibold tracking-tight">
-            Your Documentation Sets
-          </h2>
+          <h2 className="text-2xl font-semibold tracking-tight">Your Documentation Sets</h2>
           <p className="text-muted-foreground">
             Create and manage documentation sets for your MCP server
           </p>
         </div>
-        <Button
-          onClick={handleCreateDocumentSet}
-          className="gap-2 w-full sm:w-auto"
-        >
+        <Button onClick={handleCreateDocumentSet} className="gap-2 w-full sm:w-auto">
           <PlusIcon className="h-4 w-4" />
           Create New Set
         </Button>

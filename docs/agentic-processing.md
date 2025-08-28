@@ -112,23 +112,29 @@ No runtime change is implied by this document; it describes the design and recom
 
 ## Appendix: Agent‑friendly pointers (condensed)
 
-1) Metadata fields
+1. Metadata fields
+
 - topic_tag, section_heading, code_language, entities_person, entities_org, summary, quality_score, text
 
-2) Processing rules
+2. Processing rules
+
 - Align chunks to headings/semantic breaks; avoid cross‑topic overlap
 - Annotate topic/section/code/entities; generate summary + quality_score
 - Optional pruning by threshold
 
-3) Output format
+3. Output format
+
 - Flat JSON per chunk; arrays acceptable (may be CSV‑serialized by storage layer)
 
-4) Integration
+4. Integration
+
 - Accept strategy, chunk size/overlap, pruning threshold via config
 - Prefer batch annotation; log steps for observability
 
-5) Feedback loops
+5. Feedback loops
+
 - Allow new tag types; flag low‑confidence chunks for review
 
-6) Extensibility
+6. Extensibility
+
 - Swap providers (heuristic/LLM/hybrid) behind a stable interface

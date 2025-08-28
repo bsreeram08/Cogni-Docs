@@ -76,14 +76,14 @@ export interface StorageService {
       content: string;
       embedding: number[];
       metadata: DocumentMetadata;
-    }>
+    }>,
   ): Promise<void>;
 
   searchDocuments(
     setId: string,
     queryEmbedding: number[],
     limit?: number,
-    filters?: Record<string, any>
+    filters?: Record<string, any>,
   ): Promise<SearchResult[]>;
 
   deleteDocument(setId: string, documentId: string): Promise<void>;

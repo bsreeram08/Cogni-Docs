@@ -30,10 +30,7 @@ export class ChromaStorage implements StorageService {
     }
   }
 
-  async createDocumentSet(
-    name: string,
-    description?: string
-  ): Promise<DocumentSet> {
+  async createDocumentSet(name: string, description?: string): Promise<DocumentSet> {
     try {
       const collection = await this.client.createCollection({
         name: name,
@@ -68,9 +65,7 @@ export class ChromaStorage implements StorageService {
         id: setId,
         name: setId,
         description: (collection.metadata?.description as string) || "",
-        created_at: new Date(
-          (collection.metadata?.created_at as string) || Date.now()
-        ),
+        created_at: new Date((collection.metadata?.created_at as string) || Date.now()),
         document_count: count,
       };
     } catch {
@@ -89,12 +84,10 @@ export class ChromaStorage implements StorageService {
             id: col.name,
             name: col.name,
             description: (col.metadata?.description as string) || "",
-            created_at: new Date(
-              (col.metadata?.created_at as string) || Date.now()
-            ),
+            created_at: new Date((col.metadata?.created_at as string) || Date.now()),
             document_count: count,
           };
-        })
+        }),
       );
     } catch (error) {
       throw new Error(`Failed to list document sets: ${error.message}`);
@@ -153,7 +146,7 @@ export class ChromaStorage implements StorageService {
       content: string;
       embedding: number[];
       metadata: DocumentMetadata;
-    }>
+    }>,
   ): Promise<void> {
     try {
       let collection = this.collections.get(setId);
@@ -182,26 +175,24 @@ export class ChromaStorage implements StorageService {
               ? doc.metadata.keywords.join(",")
               : String(doc.metadata.keywords || ""),
             chunk_index: Number(doc.metadata.chunk_index) || 0,
-            page_number: doc.metadata.page_number
-              ? Number(doc.metadata.page_number)
-              : undefined,
+            page_number: doc.metadata.page_number ? Number(doc.metadata.page_number) : undefined,
             // Agentic annotation fields (store arrays as CSV strings)
             section_heading: doc.metadata.section_heading || undefined,
             topic_tags: Array.isArray(doc.metadata.topic_tags)
               ? doc.metadata.topic_tags.join(",")
               : doc.metadata.topic_tags
-              ? String(doc.metadata.topic_tags)
-              : undefined,
+                ? String(doc.metadata.topic_tags)
+                : undefined,
             code_languages: Array.isArray(doc.metadata.code_languages)
               ? doc.metadata.code_languages.join(",")
               : doc.metadata.code_languages
-              ? String(doc.metadata.code_languages)
-              : undefined,
+                ? String(doc.metadata.code_languages)
+                : undefined,
             entities: Array.isArray(doc.metadata.entities)
               ? doc.metadata.entities.join(",")
               : doc.metadata.entities
-              ? String(doc.metadata.entities)
-              : undefined,
+                ? String(doc.metadata.entities)
+                : undefined,
             summary: doc.metadata.summary || undefined,
             quality_score:
               typeof doc.metadata.quality_score === "number"
@@ -219,7 +210,7 @@ export class ChromaStorage implements StorageService {
     setId: string,
     queryEmbedding: number[],
     limit: number = 10,
-    filters?: Record<string, any>
+    filters?: Record<string, any>,
   ): Promise<SearchResult[]> {
     try {
       let collection = this.collections.get(setId);
@@ -268,10 +259,7 @@ export class ChromaStorage implements StorageService {
               .map((k: string) => k.trim())
               .filter((k: string) => k);
           }
-          if (
-            typeof metadata.code_languages === "string" &&
-            metadata.code_languages
-          ) {
+          if (typeof metadata.code_languages === "string" && metadata.code_languages) {
             metadata.code_languages = metadata.code_languages
               .split(",")
               .map((k: string) => k.trim())

@@ -98,9 +98,7 @@ export const LandingPage: React.FC = () => {
               </div>
               <div>
                 <h1 className="text-lg font-bold">Documentation MCP</h1>
-                <p className="text-xs text-muted-foreground">
-                  Knowledge Base Manager
-                </p>
+                <p className="text-xs text-muted-foreground">Knowledge Base Manager</p>
               </div>
             </div>
 
@@ -131,9 +129,8 @@ export const LandingPage: React.FC = () => {
             </h1>
 
             <p className="text-xl text-muted-foreground mb-10 max-w-3xl mx-auto">
-              Upload, organize, and search your documentation with AI-powered
-              semantic search. Perfect for developers, researchers, and teams
-              building intelligent applications.
+              Upload, organize, and search your documentation with AI-powered semantic search.
+              Perfect for developers, researchers, and teams building intelligent applications.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -161,24 +158,19 @@ export const LandingPage: React.FC = () => {
               Everything You Need for Document Management
             </h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Built for modern teams and AI applications. Powerful features that
-              scale with your needs.
+              Built for modern teams and AI applications. Powerful features that scale with your
+              needs.
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {features.map((feature, index) => (
-              <Card
-                key={index}
-                className="border-0 bg-background/60 backdrop-blur"
-              >
+              <Card key={index} className="border-0 bg-background/60 backdrop-blur">
                 <CardContent className="p-6">
                   <div className="rounded-lg bg-primary/10 p-3 w-fit mb-4">
                     <feature.icon className="h-6 w-6 text-primary" />
                   </div>
-                  <h3 className="text-lg font-semibold mb-2">
-                    {feature.title}
-                  </h3>
+                  <h3 className="text-lg font-semibold mb-2">{feature.title}</h3>
                   <p className="text-muted-foreground">{feature.description}</p>
                 </CardContent>
               </Card>
@@ -191,12 +183,9 @@ export const LandingPage: React.FC = () => {
       <section className="py-20">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold tracking-tight mb-4">
-              Get Started in Minutes
-            </h2>
+            <h2 className="text-3xl font-bold tracking-tight mb-4">Get Started in Minutes</h2>
             <p className="text-lg text-muted-foreground">
-              Simple setup, powerful results. Start building your knowledge base
-              today.
+              Simple setup, powerful results. Start building your knowledge base today.
             </p>
           </div>
 
@@ -219,13 +208,10 @@ export const LandingPage: React.FC = () => {
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <div>
-              <h2 className="text-3xl font-bold tracking-tight mb-6">
-                Perfect for Every Use Case
-              </h2>
+              <h2 className="text-3xl font-bold tracking-tight mb-6">Perfect for Every Use Case</h2>
               <p className="text-lg text-muted-foreground mb-8">
-                Whether you're managing technical docs, research papers, or
-                building AI applications, Documentation MCP adapts to your
-                workflow.
+                Whether you're managing technical docs, research papers, or building AI
+                applications, Documentation MCP adapts to your workflow.
               </p>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -259,9 +245,7 @@ export const LandingPage: React.FC = () => {
                     <code className="text-sm">
                       <div className="text-green-600"># Install MCP server</div>
                       <div>npm install -g documentation-mcp</div>
-                      <div className="text-green-600 mt-2">
-                        # Configure in your AI app
-                      </div>
+                      <div className="text-green-600 mt-2"># Configure in your AI app</div>
                       <div>{`"mcpServers": {`}</div>
                       <div className="ml-4">{`"docs": {`}</div>
                       <div className="ml-8">{`"command": "documentation-mcp"`}</div>
@@ -281,12 +265,10 @@ export const LandingPage: React.FC = () => {
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <Card className="bg-primary text-primary-foreground border-0">
             <CardContent className="p-12 text-center">
-              <h2 className="text-3xl font-bold mb-4">
-                Ready to Build Your Knowledge Base?
-              </h2>
+              <h2 className="text-3xl font-bold mb-4">Ready to Build Your Knowledge Base?</h2>
               <p className="text-lg opacity-90 mb-8 max-w-2xl mx-auto">
-                Join thousands of developers and teams using Documentation MCP
-                to power their AI applications and organize their knowledge.
+                Join thousands of developers and teams using Documentation MCP to power their AI
+                applications and organize their knowledge.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Link to="/register">
@@ -320,15 +302,12 @@ export const LandingPage: React.FC = () => {
               </div>
               <div>
                 <p className="font-semibold">Documentation MCP</p>
-                <p className="text-xs text-muted-foreground">
-                  Knowledge Base Manager
-                </p>
+                <p className="text-xs text-muted-foreground">Knowledge Base Manager</p>
               </div>
             </div>
 
             <p className="text-sm text-muted-foreground">
-              © 2025 Documentation MCP. Built for the future of AI-powered
-              knowledge management.
+              © 2025 Documentation MCP. Built for the future of AI-powered knowledge management.
             </p>
           </div>
         </div>

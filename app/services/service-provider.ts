@@ -25,7 +25,7 @@ class ServiceProvider {
     if (!this.config) {
       this.config = loadConfig();
       logger.info(
-        `Loaded configuration: storage=${this.config.storage.name}, embeddings=${this.config.embeddings.name}, chunking=${this.config.chunking.name}`
+        `Loaded configuration: storage=${this.config.storage.name}, embeddings=${this.config.embeddings.name}, chunking=${this.config.chunking.name}`,
       );
     }
     return this.config;
@@ -63,7 +63,7 @@ class ServiceProvider {
       const config = this.getConfig();
       this.agentService = createAgentService(config);
       logger.info(
-        `Initialized ${config.agent.name} agent service (enabled=${config.agent.enabled})`
+        `Initialized ${config.agent.name} agent service (enabled=${config.agent.enabled})`,
       );
     }
     return this.agentService;
@@ -121,14 +121,10 @@ class ServiceProvider {
 const serviceProvider = new ServiceProvider();
 
 export const getConfig = (): AppConfig => serviceProvider.getConfig();
-export const getStorageService = (): StorageService =>
-  serviceProvider.getStorageService();
-export const getEmbeddingService = (): EmbeddingService =>
-  serviceProvider.getEmbeddingService();
-export const getChunkerService = (): Chunker =>
-  serviceProvider.getChunkerService();
-export const getAgentService = (): AgentService =>
-  serviceProvider.getAgentService();
+export const getStorageService = (): StorageService => serviceProvider.getStorageService();
+export const getEmbeddingService = (): EmbeddingService => serviceProvider.getEmbeddingService();
+export const getChunkerService = (): Chunker => serviceProvider.getChunkerService();
+export const getAgentService = (): AgentService => serviceProvider.getAgentService();
 export const healthCheck = (): Promise<{
   storage: boolean;
   embeddings: boolean;

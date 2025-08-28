@@ -52,10 +52,7 @@ const parseJSON = (value: string | undefined): Record<string, unknown> => {
   return {};
 };
 
-const parseBoolean = (
-  value: string | undefined,
-  fallback: boolean
-): boolean => {
+const parseBoolean = (value: string | undefined, fallback: boolean): boolean => {
   if (!value) return fallback;
   const v = value.trim().toLowerCase();
   if (["1", "true", "yes", "on"].includes(v)) return true;
@@ -64,16 +61,14 @@ const parseBoolean = (
 };
 
 export const loadConfig = (): AppConfig => {
-  const storageName =
-    process.env.STORAGE_NAME || process.env.STORAGE_PROVIDER || "chroma";
+  const storageName = process.env.STORAGE_NAME || process.env.STORAGE_PROVIDER || "chroma";
   const storageOptions = {
     ...parseJSON(process.env.STORAGE_OPTIONS),
     // Back-compat fallback
     url: process.env.CHROMA_URL || undefined,
   };
 
-  const embeddingsName =
-    process.env.EMBEDDINGS_NAME || process.env.EMBEDDING_PROVIDER || "xenova";
+  const embeddingsName = process.env.EMBEDDINGS_NAME || process.env.EMBEDDING_PROVIDER || "xenova";
   const embeddingsOptions = {
     ...parseJSON(process.env.EMBEDDINGS_OPTIONS),
     // Back-compat fallbacks
@@ -81,8 +76,7 @@ export const loadConfig = (): AppConfig => {
     maxBatchSize: parseNumber(process.env.MAX_BATCH_SIZE, 0) || undefined,
   };
 
-  const chunkingName =
-    process.env.CHUNKING_NAME || process.env.CHUNKING_PROVIDER || "langchain";
+  const chunkingName = process.env.CHUNKING_NAME || process.env.CHUNKING_PROVIDER || "langchain";
   const chunkingOptions = {
     ...parseJSON(process.env.CHUNKING_OPTIONS),
     // Back-compat fallbacks for prior numeric settings
@@ -108,9 +102,7 @@ export const loadConfig = (): AppConfig => {
 
   if (!result.success) {
     console.error("Configuration validation failed:", result.error.format());
-    throw new Error(
-      "Invalid configuration. Please check your environment variables."
-    );
+    throw new Error("Invalid configuration. Please check your environment variables.");
   }
 
   return result.data;

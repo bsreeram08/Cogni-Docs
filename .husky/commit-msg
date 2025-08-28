@@ -1,0 +1,5 @@
+#!/usr/bin/env sh
+set -e
+printf "\033[36mhusky commit-msg: commitlint\033[0m\n"
+# Lint the commit message using commitlint
+bunx --bun commitlint --edit "${1}"

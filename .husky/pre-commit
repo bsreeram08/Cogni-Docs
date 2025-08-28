@@ -1,0 +1,7 @@
+#!/usr/bin/env sh
+set -e
+printf "\033[36mhusky pre-commit: lint-staged + typecheck\033[0m\n"
+# Format only staged files
+bunx --bun lint-staged
+# Typecheck the project
+bun run typecheck

@@ -39,15 +39,17 @@ export interface AgentChunkAnnotation {
 export interface AgentService {
   readonly name: string;
   readonly analyzePreChunk: (
-    input: AgentPreChunkInput
+    input: AgentPreChunkInput,
   ) => Promise<AgentPreChunkDecision> | AgentPreChunkDecision;
   readonly annotateChunk: (
-    input: AgentChunkAnnotationInput
+    input: AgentChunkAnnotationInput,
   ) => Promise<AgentChunkAnnotation> | AgentChunkAnnotation;
   readonly cleanup?: () => Promise<void>;
 }
 
-export interface AgentProviderFactory<Options extends Record<string, unknown> = Record<string, unknown>> {
+export interface AgentProviderFactory<
+  Options extends Record<string, unknown> = Record<string, unknown>,
+> {
   readonly schema: z.ZodType<Options>;
   readonly create: (options: Options) => Promise<AgentService> | AgentService;
 }

@@ -1,13 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
@@ -81,15 +75,11 @@ export const DocumentSetDetailPage: React.FC = () => {
     try {
       await apiService.deleteDocument(setId, documentId);
       // Remove the document from local state
-      setDocuments((prevDocs) =>
-        prevDocs.filter((doc) => doc.id !== documentId)
-      );
+      setDocuments((prevDocs) => prevDocs.filter((doc) => doc.id !== documentId));
       // Update document count
       if (documentSet) {
         setDocumentSet((prev) =>
-          prev
-            ? { ...prev, documentCount: Math.max(0, prev.documentCount - 1) }
-            : null
+          prev ? { ...prev, documentCount: Math.max(0, prev.documentCount - 1) } : null,
         );
       }
     } catch (error) {
@@ -128,9 +118,7 @@ export const DocumentSetDetailPage: React.FC = () => {
     }
   };
 
-  const handleFilesSelected = async (
-    incoming: FileList | File[]
-  ): Promise<void> => {
+  const handleFilesSelected = async (incoming: FileList | File[]): Promise<void> => {
     if (!setId) return;
     setIsUploading(true);
     try {
@@ -152,9 +140,7 @@ export const DocumentSetDetailPage: React.FC = () => {
     } catch (error) {
       console.error("Failed to upload documents:", error);
       const msg =
-        error instanceof Error
-          ? error.message
-          : "Failed to upload documents. Please try again.";
+        error instanceof Error ? error.message : "Failed to upload documents. Please try again.";
       alert(msg);
     } finally {
       setIsUploading(false);
@@ -169,12 +155,9 @@ export const DocumentSetDetailPage: React.FC = () => {
             <div className="rounded-full bg-muted p-4 mb-4">
               <AlertCircleIcon className="h-8 w-8 text-muted-foreground" />
             </div>
-            <h2 className="text-xl font-semibold mb-2">
-              Document set not found
-            </h2>
+            <h2 className="text-xl font-semibold mb-2">Document set not found</h2>
             <p className="text-muted-foreground mb-6">
-              The document set you're looking for doesn't exist or has been
-              removed.
+              The document set you're looking for doesn't exist or has been removed.
             </p>
             <Button onClick={() => navigate("/dashboard")} className="gap-2">
               <ArrowLeftIcon className="h-4 w-4" />
@@ -202,9 +185,7 @@ export const DocumentSetDetailPage: React.FC = () => {
                 Back to Dashboard
               </Button>
               <div className="min-w-0">
-                <h1 className="text-3xl font-bold tracking-tight truncate">
-                  {documentSet.name}
-                </h1>
+                <h1 className="text-3xl font-bold tracking-tight truncate">{documentSet.name}</h1>
                 <p className="text-muted-foreground line-clamp-2">
                   {documentSet.description || "No description provided"}
                 </p>
@@ -235,15 +216,12 @@ export const DocumentSetDetailPage: React.FC = () => {
                   MCP Integration
                 </CardTitle>
                 <CardDescription>
-                  Use this document set ID in your MCP client to query these
-                  documents
+                  Use this document set ID in your MCP client to query these documents
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
                 <div>
-                  <Label className="text-sm font-semibold mb-2 block">
-                    Document Set ID
-                  </Label>
+                  <Label className="text-sm font-semibold mb-2 block">Document Set ID</Label>
                   <div className="flex items-center gap-2">
                     <code className="flex-1 px-3 py-2 bg-background border rounded-md text-sm font-mono break-all">
                       {setId}
@@ -269,9 +247,7 @@ export const DocumentSetDetailPage: React.FC = () => {
                     <strong>Quick Start:</strong>
                     <ol className="mt-2 text-sm space-y-1 list-decimal list-inside ml-2">
                       <li>Copy the Document Set ID above</li>
-                      <li>
-                        Configure your MCP client to connect to this server
-                      </li>
+                      <li>Configure your MCP client to connect to this server</li>
                       <li>Use MCP tools to query documents in this set</li>
                     </ol>
                   </AlertDescription>
@@ -285,10 +261,7 @@ export const DocumentSetDetailPage: React.FC = () => {
                       <FolderIcon className="h-4 w-4" />
                       Documents
                     </div>
-                    <Badge
-                      variant="secondary"
-                      className="text-lg font-semibold px-3 py-1"
-                    >
+                    <Badge variant="secondary" className="text-lg font-semibold px-3 py-1">
                       {documents.length}
                     </Badge>
                   </div>
@@ -316,11 +289,16 @@ export const DocumentSetDetailPage: React.FC = () => {
                     Add Documents
                   </CardTitle>
                   <CardDescription>
-                    Drag and drop files or click to browse. Supports PDF, TXT, HTML, and Markdown files.
+                    Drag and drop files or click to browse. Supports PDF, TXT, HTML, and Markdown
+                    files.
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <FileUploader multiple disabled={isUploading} onFilesSelected={handleFilesSelected} />
+                  <FileUploader
+                    multiple
+                    disabled={isUploading}
+                    onFilesSelected={handleFilesSelected}
+                  />
                 </CardContent>
               </Card>
             </div>
@@ -332,14 +310,11 @@ export const DocumentSetDetailPage: React.FC = () => {
                       <FileIcon className="h-5 w-5" />
                       Documents
                     </CardTitle>
-                    <CardDescription>
-                      Files included in this documentation set
-                    </CardDescription>
+                    <CardDescription>Files included in this documentation set</CardDescription>
                   </div>
                   {documents.length > 0 && (
                     <Badge variant="outline">
-                      {documents.length}{" "}
-                      {documents.length === 1 ? "file" : "files"}
+                      {documents.length} {documents.length === 1 ? "file" : "files"}
                     </Badge>
                   )}
                 </div>
@@ -350,12 +325,9 @@ export const DocumentSetDetailPage: React.FC = () => {
                     <div className="rounded-full bg-muted p-4 mb-4">
                       <FileTextIcon className="h-8 w-8 text-muted-foreground" />
                     </div>
-                    <h3 className="text-lg font-semibold mb-2">
-                      No documents yet
-                    </h3>
+                    <h3 className="text-lg font-semibold mb-2">No documents yet</h3>
                     <p className="text-muted-foreground mb-6 max-w-sm">
-                      Upload your first document to start building your
-                      knowledge base.
+                      Upload your first document to start building your knowledge base.
                     </p>
                     <Button
                       className="gap-2"
@@ -375,29 +347,19 @@ export const DocumentSetDetailPage: React.FC = () => {
                         className="group flex items-center gap-4 p-4 border rounded-lg hover:bg-muted/50 transition-colors"
                       >
                         <div className="flex-shrink-0">
-                          <span className="text-xl">
-                            {getMimeTypeIcon(document.mime)}
-                          </span>
+                          <span className="text-xl">{getMimeTypeIcon(document.mime)}</span>
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between gap-2">
-                            <h4 className="font-medium truncate">
-                              {document.filename}
-                            </h4>
+                            <h4 className="font-medium truncate">{document.filename}</h4>
                             <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-8 w-8 p-0"
-                              >
+                              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
                                 <DownloadIcon className="h-3 w-3" />
                               </Button>
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                onClick={() =>
-                                  handleDeleteDocument(document.id)
-                                }
+                                onClick={() => handleDeleteDocument(document.id)}
                                 disabled={deletingDocId === document.id}
                                 className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
                               >
@@ -414,12 +376,7 @@ export const DocumentSetDetailPage: React.FC = () => {
                             <span>•</span>
                             <span>{document.mime}</span>
                             <span>•</span>
-                            <span>
-                              Added{" "}
-                              {new Date(
-                                document.createdAt
-                              ).toLocaleDateString()}
-                            </span>
+                            <span>Added {new Date(document.createdAt).toLocaleDateString()}</span>
                           </div>
                         </div>
                       </div>

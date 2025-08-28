@@ -35,7 +35,9 @@ export interface Chunker {
   readonly chunk: (input: ChunkerInput, overrides?: ChunkOverrides) => Promise<ChunkingResult>;
 }
 
-export interface ChunkerProviderFactory<Options extends Record<string, unknown> = Record<string, unknown>> {
+export interface ChunkerProviderFactory<
+  Options extends Record<string, unknown> = Record<string, unknown>,
+> {
   readonly schema: z.ZodType<Options>;
   readonly create: (options: Options) => Promise<Chunker> | Chunker;
 }

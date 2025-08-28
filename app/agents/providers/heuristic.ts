@@ -41,7 +41,11 @@ const extractHeading = (text: string): string | undefined => {
   const md = text.match(/^\s{0,3}#{1,6}\s+(.{1,120})$/m);
   if (md) return md[1].trim();
   const html = text.match(/<h[1-6][^>]*>(.*?)<\/h[1-6]>/i);
-  if (html) return html[1].replace(/<[^>]+>/g, "").slice(0, 120).trim();
+  if (html)
+    return html[1]
+      .replace(/<[^>]+>/g, "")
+      .slice(0, 120)
+      .trim();
   return undefined;
 };
 
@@ -76,43 +80,44 @@ const scoreQuality = (text: string): number => {
   return Number(score.toFixed(2));
 };
 
-export const heuristicAgentProvider: AgentProviderFactory<z.infer<typeof HeuristicOptionsSchema>> = {
-  schema: HeuristicOptionsSchema,
-  create: (options): AgentService => {
-    const service: AgentService = {
-      name: "heuristic",
-      analyzePreChunk: (input: AgentPreChunkInput): AgentPreChunkDecision => {
-        const hasCode = detectHasCode(input.text);
-        if (hasCode) {
+export const heuristicAgentProvider: AgentProviderFactory<z.infer<typeof HeuristicOptionsSchema>> =
+  {
+    schema: HeuristicOptionsSchema,
+    create: (options): AgentService => {
+      const service: AgentService = {
+        name: "heuristic",
+        analyzePreChunk: (input: AgentPreChunkInput): AgentPreChunkDecision => {
+          const hasCode = detectHasCode(input.text);
+          if (hasCode) {
+            return {
+              strategy: "intelligent",
+              chunkSize: options.maxChunkSizeForCode,
+              chunkOverlap: options.targetOverlap,
+            };
+          }
           return {
-            strategy: "intelligent",
-            chunkSize: options.maxChunkSizeForCode,
+            strategy: "recursive",
+            chunkSize: options.minChunkSizeForProse,
             chunkOverlap: options.targetOverlap,
           };
-        }
-        return {
-          strategy: "recursive",
-          chunkSize: options.minChunkSizeForProse,
-          chunkOverlap: options.targetOverlap,
-        };
-      },
-      annotateChunk: (input: AgentChunkAnnotationInput): AgentChunkAnnotation => {
-        const { chunk } = input;
-        const section_heading = extractHeading(chunk.text);
-        const topic_tags = guessTags(chunk.text);
-        const code_languages = detectLanguages(chunk.text);
-        const summary = summarize(chunk.text);
-        const quality_score = scoreQuality(chunk.text);
-        return {
-          section_heading,
-          topic_tags,
-          code_languages,
-          entities: [],
-          summary,
-          quality_score,
-        };
-      },
-    };
-    return service;
-  },
-};
+        },
+        annotateChunk: (input: AgentChunkAnnotationInput): AgentChunkAnnotation => {
+          const { chunk } = input;
+          const section_heading = extractHeading(chunk.text);
+          const topic_tags = guessTags(chunk.text);
+          const code_languages = detectLanguages(chunk.text);
+          const summary = summarize(chunk.text);
+          const quality_score = scoreQuality(chunk.text);
+          return {
+            section_heading,
+            topic_tags,
+            code_languages,
+            entities: [],
+            summary,
+            quality_score,
+          };
+        },
+      };
+      return service;
+    },
+  };

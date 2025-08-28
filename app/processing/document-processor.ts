@@ -30,15 +30,10 @@ export interface ProcessDocumentOutput {
 }
 
 export interface DocumentProcessor {
-  readonly processDocument: (
-    input: ProcessDocumentInput
-  ) => Promise<ProcessDocumentOutput>;
+  readonly processDocument: (input: ProcessDocumentInput) => Promise<ProcessDocumentOutput>;
 }
 
-const parseDocumentContent = async (
-  data: Uint8Array,
-  mimeType: MimeType
-): Promise<string> => {
+const parseDocumentContent = async (data: Uint8Array, mimeType: MimeType): Promise<string> => {
   switch (mimeType) {
     case "text/plain":
       return parseText({ data }).text;
@@ -55,9 +50,7 @@ const parseDocumentContent = async (
 };
 
 export const createDocumentProcessor = (): DocumentProcessor => {
-  const processDocument = async (
-    input: ProcessDocumentInput
-  ): Promise<ProcessDocumentOutput> => {
+  const processDocument = async (input: ProcessDocumentInput): Promise<ProcessDocumentOutput> => {
     const embeddingService = getEmbeddingService();
     const storageService = getStorageService();
     const config = getConfig();
@@ -92,8 +85,8 @@ export const createDocumentProcessor = (): DocumentProcessor => {
     let effectiveStrategy: string | undefined = opts.strategy;
     let computedSize =
       text.length > 100000
-        ? opts.maxSize ?? opts.chunkSize ?? 2000
-        : opts.defaultSize ?? opts.chunkSize ?? 1000;
+        ? (opts.maxSize ?? opts.chunkSize ?? 2000)
+        : (opts.defaultSize ?? opts.chunkSize ?? 1000);
     let computedOverlap = opts.overlap ?? opts.chunkOverlap ?? 200;
 
     if (config.agent?.enabled) {
@@ -105,12 +98,9 @@ export const createDocumentProcessor = (): DocumentProcessor => {
         mimeType: input.mimeType,
         text,
       });
-      if (typeof decision.chunkSize === "number")
-        computedSize = decision.chunkSize;
-      if (typeof decision.chunkOverlap === "number")
-        computedOverlap = decision.chunkOverlap;
-      if (typeof decision.strategy === "string")
-        effectiveStrategy = decision.strategy;
+      if (typeof decision.chunkSize === "number") computedSize = decision.chunkSize;
+      if (typeof decision.chunkOverlap === "number") computedOverlap = decision.chunkOverlap;
+      if (typeof decision.strategy === "string") effectiveStrategy = decision.strategy;
     }
 
     const chunker = getChunkerService();
@@ -120,14 +110,12 @@ export const createDocumentProcessor = (): DocumentProcessor => {
         chunkSize: computedSize,
         chunkOverlap: computedOverlap,
         strategy: effectiveStrategy,
-      }
+      },
     );
     logger.info(
       `Created ${chunkResult.chunks.length} chunks (${
         chunkResult.info.chunkSize ?? computedSize
-      } chars per chunk) using ${chunkResult.info.provider}/${
-        chunkResult.info.strategy
-      }`
+      } chars per chunk) using ${chunkResult.info.provider}/${chunkResult.info.strategy}`,
     );
 
     // Step 4: Generate embeddings with retry and batching, then store documents with embeddings
@@ -137,12 +125,9 @@ export const createDocumentProcessor = (): DocumentProcessor => {
     interface EmbeddingBatchOption {
       readonly maxBatchSize?: number;
     }
-    const embeddingOpts = config.embeddings
-      .options as Partial<EmbeddingBatchOption>;
+    const embeddingOpts = config.embeddings.options as Partial<EmbeddingBatchOption>;
     const providerMaxBatch =
-      typeof embeddingOpts.maxBatchSize === "number"
-        ? embeddingOpts.maxBatchSize
-        : 50;
+      typeof embeddingOpts.maxBatchSize === "number" ? embeddingOpts.maxBatchSize : 50;
     const batchSize = Math.min(providerMaxBatch, chunks.length > 100 ? 20 : 50);
     logger.info(`Processing embeddings in batches of ${batchSize}`);
 
@@ -153,22 +138,18 @@ export const createDocumentProcessor = (): DocumentProcessor => {
       logger.info(
         `Processing embedding batch ${
           Math.floor(i / batchSize) + 1
-        }/${Math.ceil(chunks.length / batchSize)}`
+        }/${Math.ceil(chunks.length / batchSize)}`,
       );
 
       const embeddingResponse = await withRetry(
         () => embeddingService.generateEmbeddings({ texts: chunkTexts }),
-        { maxAttempts: 5, baseDelayMs: 2000, maxDelayMs: 60000 }
+        { maxAttempts: 5, baseDelayMs: 2000, maxDelayMs: 60000 },
       );
 
       const providerTag = `provider:${chunkResult.info.provider}`;
       const strategyTag = `strategy:${chunkResult.info.strategy}`;
-      const sizeTag = `chunk_size:${
-        chunkResult.info.chunkSize ?? computedSize
-      }`;
-      const overlapTag = `chunk_overlap:${
-        chunkResult.info.chunkOverlap ?? computedOverlap
-      }`;
+      const sizeTag = `chunk_size:${chunkResult.info.chunkSize ?? computedSize}`;
+      const overlapTag = `chunk_overlap:${chunkResult.info.chunkOverlap ?? computedOverlap}`;
       const documents = await Promise.all(
         batch.map(async (chunk, index) => {
           let agentMeta: Record<string, unknown> = {};
@@ -210,14 +191,14 @@ export const createDocumentProcessor = (): DocumentProcessor => {
               ...agentMeta,
             },
           };
-        })
+        }),
       );
 
       // Store documents + embeddings together
-      await withRetry(
-        () => storageService.addDocuments(input.setId, documents),
-        { maxAttempts: 3, baseDelayMs: 1000 }
-      );
+      await withRetry(() => storageService.addDocuments(input.setId, documents), {
+        maxAttempts: 3,
+        baseDelayMs: 1000,
+      });
       storedCount.push(documents.length);
 
       // Brief pause between batches to be respectful to APIs

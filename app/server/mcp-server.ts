@@ -4,10 +4,7 @@
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import {
-  getStorageService,
-  getEmbeddingService,
-} from "../services/service-provider.js";
+import { getStorageService, getEmbeddingService } from "../services/service-provider.js";
 import { ElysiaStreamingHttpTransport } from "../utils/sse-elysia.js";
 import Elysia from "elysia";
 import staticPlugin from "@elysiajs/static";
@@ -40,7 +37,7 @@ export function startMcpServer(app: Elysia) {
           (set) =>
             `• **${set.name}** (ID: ${set.id})\n  ${
               set.description || "No description"
-            }\n  Created: ${set.created_at}`
+            }\n  Created: ${set.created_at}`,
         )
         .join("\n\n");
 
@@ -55,7 +52,7 @@ export function startMcpServer(app: Elysia) {
           },
         ],
       };
-    }
+    },
   );
 
   // Tool: Search documentation
@@ -66,16 +63,12 @@ export function startMcpServer(app: Elysia) {
       description: "Search for information within a specific documentation set",
       inputSchema: {
         setId: z.string().describe("The ID of the documentation set to search"),
-        query: z
-          .string()
-          .describe("The question or query to answer using documentation"),
+        query: z.string().describe("The question or query to answer using documentation"),
         limit: z
           .number()
           .optional()
           .default(10)
-          .describe(
-            "Maximum number of search results to use as context (default: 10)"
-          ),
+          .describe("Maximum number of search results to use as context (default: 10)"),
       },
     },
     async ({ setId, query, limit }) => {
@@ -88,11 +81,7 @@ export function startMcpServer(app: Elysia) {
         });
         const queryEmbedding = embeddings[0];
         const k = typeof limit === "number" ? limit : 10;
-        const results = await storageService.searchDocuments(
-          setId,
-          queryEmbedding,
-          k
-        );
+        const results = await storageService.searchDocuments(setId, queryEmbedding, k);
 
         if (results.length === 0) {
           return {
@@ -108,12 +97,10 @@ export function startMcpServer(app: Elysia) {
         const resultsText = results
           .map(
             (result, index) =>
-              `**Result ${index + 1}** (Score: ${result.similarity.toFixed(
-                3
-              )})\n` +
+              `**Result ${index + 1}** (Score: ${result.similarity.toFixed(3)})\n` +
               `Document ID: ${result.metadata.document_id ?? "(unknown)"}\n` +
               `Chunk ID: ${result.id}\n\n` +
-              `${result.content}\n\n---`
+              `${result.content}\n\n---`,
           )
           .join("\n\n");
 
@@ -137,7 +124,7 @@ export function startMcpServer(app: Elysia) {
           ],
         };
       }
-    }
+    },
   );
 
   // Tool: Get documentation set info
@@ -145,8 +132,7 @@ export function startMcpServer(app: Elysia) {
     "get_documentation_set",
     {
       title: "Get Documentation Set Info",
-      description:
-        "Get detailed information about a specific documentation set",
+      description: "Get detailed information about a specific documentation set",
       inputSchema: {
         setId: z.string().describe("The ID of the documentation set"),
       },
@@ -193,7 +179,7 @@ export function startMcpServer(app: Elysia) {
           ],
         };
       }
-    }
+    },
   );
 
   // Tool: Agentic search (extractive, provider-agnostic)
@@ -205,16 +191,12 @@ export function startMcpServer(app: Elysia) {
         "Generate an extractive answer from top documentation search results (no external LLM required)",
       inputSchema: {
         setId: z.string().describe("The ID of the documentation set to search"),
-        query: z
-          .string()
-          .describe("The question or query to answer using documentation"),
+        query: z.string().describe("The question or query to answer using documentation"),
         limit: z
           .number()
           .optional()
           .default(10)
-          .describe(
-            "Maximum number of search results to use as context (default: 10)"
-          ),
+          .describe("Maximum number of search results to use as context (default: 10)"),
       },
     },
     async ({ setId, query, limit }) => {
@@ -232,11 +214,7 @@ export function startMcpServer(app: Elysia) {
         });
         const queryEmbedding = embeddings[0];
         const k = typeof limit === "number" ? limit : 10;
-        const results = await storageService.searchDocuments(
-          setId,
-          queryEmbedding,
-          k
-        );
+        const results = await storageService.searchDocuments(setId, queryEmbedding, k);
 
         if (results.length === 0) {
           return {
@@ -251,10 +229,7 @@ export function startMcpServer(app: Elysia) {
 
         // Simple extractive answer: take top result snippet
         const top = results[0];
-        const snippet =
-          top.content.length > 800
-            ? `${top.content.slice(0, 800)}...`
-            : top.content;
+        const snippet = top.content.length > 800 ? `${top.content.slice(0, 800)}...` : top.content;
 
         const responseText =
           `**Question:** ${query}\n\n` +
@@ -262,9 +237,7 @@ export function startMcpServer(app: Elysia) {
           `---\n\n` +
           `*Based on ${
             results.length
-          } documentation source(s) from ${setName}. Top score: ${top.similarity.toFixed(
-            3
-          )}*`;
+          } documentation source(s) from ${setName}. Top score: ${top.similarity.toFixed(3)}*`;
 
         return {
           content: [
@@ -286,7 +259,7 @@ export function startMcpServer(app: Elysia) {
           ],
         };
       }
-    }
+    },
   );
 
   // Only serve static assets if ./public exists
@@ -295,7 +268,7 @@ export function startMcpServer(app: Elysia) {
       staticPlugin({
         assets: "./public",
         prefix: "/",
-      })
+      }),
     );
   }
 
@@ -311,16 +284,13 @@ export function startMcpServer(app: Elysia) {
   // Streamable HTTP MCP endpoint (preferred)
   app
     .get("/mcp", () => {
-      return new Response(
-        JSON.stringify({ error: "Method Not Allowed. Use POST /mcp." }),
-        {
-          status: 405,
-          headers: {
-            "content-type": "application/json",
-            allow: "POST, DELETE",
-          },
-        }
-      );
+      return new Response(JSON.stringify({ error: "Method Not Allowed. Use POST /mcp." }), {
+        status: 405,
+        headers: {
+          "content-type": "application/json",
+          allow: "POST, DELETE",
+        },
+      });
     })
     .post("/mcp", async (context) => {
       // Prefer request-scoped reqId if derived earlier, else generate
@@ -334,7 +304,7 @@ export function startMcpServer(app: Elysia) {
         const body = context.body as unknown;
         const messages = Array.isArray(body) ? body : [body];
         const isInit = messages.some(
-          (m: any) => m && typeof m === "object" && m.method === "initialize"
+          (m: any) => m && typeof m === "object" && m.method === "initialize",
         );
 
         if (isInit) {
@@ -346,7 +316,7 @@ export function startMcpServer(app: Elysia) {
               transports.set(sessionId, transport);
               logger.info(
                 { reqId, sessionId, activeSessions: transports.size },
-                "mcp session initialized"
+                "mcp session initialized",
               );
             },
           });
@@ -356,47 +326,37 @@ export function startMcpServer(app: Elysia) {
         }
 
         // Subsequent request: require Mcp-Session-Id header
-        const sessionId =
-          context.request.headers.get("mcp-session-id") ?? undefined;
+        const sessionId = context.request.headers.get("mcp-session-id") ?? undefined;
         if (!sessionId) {
-          return new Response(
-            JSON.stringify({ error: "Missing Mcp-Session-Id" }),
-            {
-              status: 400,
-              headers: {
-                "content-type": "application/json",
-                "X-Request-Id": reqId,
-              },
-            }
-          );
+          return new Response(JSON.stringify({ error: "Missing Mcp-Session-Id" }), {
+            status: 400,
+            headers: {
+              "content-type": "application/json",
+              "X-Request-Id": reqId,
+            },
+          });
         }
         const transport = transports.get(sessionId);
         if (!transport) {
-          return new Response(
-            JSON.stringify({ error: "Session not found" }),
-            {
-              status: 404,
-              headers: {
-                "content-type": "application/json",
-                "X-Request-Id": reqId,
-              },
-            }
-          );
+          return new Response(JSON.stringify({ error: "Session not found" }), {
+            status: 404,
+            headers: {
+              "content-type": "application/json",
+              "X-Request-Id": reqId,
+            },
+          });
         }
         logger.info({ reqId, sessionId }, "mcp request");
         return await transport.handleRequest(context as any);
       } catch (error) {
         logger.error({ reqId, err: error }, "error handling POST /mcp");
-        return new Response(
-          JSON.stringify({ error: "Internal server error" }),
-          {
-            status: 500,
-            headers: {
-              "content-type": "application/json",
-              "X-Request-Id": reqId,
-            },
-          }
-        );
+        return new Response(JSON.stringify({ error: "Internal server error" }), {
+          status: 500,
+          headers: {
+            "content-type": "application/json",
+            "X-Request-Id": reqId,
+          },
+        });
       } finally {
         const ms = Date.now() - started;
         logger.info({ reqId, durationMs: ms }, "mcp request completed");
@@ -411,17 +371,17 @@ export function startMcpServer(app: Elysia) {
       try {
         const sessionId = context.request.headers.get("mcp-session-id");
         if (!sessionId) {
-          return new Response(
-            JSON.stringify({ error: "Missing Mcp-Session-Id" }),
-            { status: 400, headers: { "content-type": "application/json" } }
-          );
+          return new Response(JSON.stringify({ error: "Missing Mcp-Session-Id" }), {
+            status: 400,
+            headers: { "content-type": "application/json" },
+          });
         }
         const transport = transports.get(sessionId);
         if (!transport) {
-          return new Response(
-            JSON.stringify({ error: "Session not found" }),
-            { status: 404, headers: { "content-type": "application/json" } }
-          );
+          return new Response(JSON.stringify({ error: "Session not found" }), {
+            status: 404,
+            headers: { "content-type": "application/json" },
+          });
         }
         await transport.close();
         transports.delete(sessionId);
@@ -432,10 +392,10 @@ export function startMcpServer(app: Elysia) {
         });
       } catch (error) {
         logger.error({ reqId, err: error }, "error handling DELETE /mcp");
-        return new Response(
-          JSON.stringify({ error: "Internal server error" }),
-          { status: 500, headers: { "content-type": "application/json" } }
-        );
+        return new Response(JSON.stringify({ error: "Internal server error" }), {
+          status: 500,
+          headers: { "content-type": "application/json" },
+        });
       }
     });
 }
