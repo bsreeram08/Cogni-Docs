@@ -66,11 +66,11 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/bsreeram08/documentation-mcp"
+    "url": "https://github.com/bsreeram08/cogni-docs"
   },
-  "homepage": "https://github.com/bsreeram08/documentation-mcp#readme",
+  "homepage": "https://github.com/bsreeram08/cogni-docs#readme",
   "bugs": {
-    "url": "https://github.com/bsreeram08/documentation-mcp/issues"
+    "url": "https://github.com/bsreeram08/cogni-docs/issues"
   },
   "overrides": {
     "sharp": "0.34.3"

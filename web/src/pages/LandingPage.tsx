@@ -244,11 +244,11 @@ export const LandingPage: React.FC = () => {
                   <div className="bg-muted/50 rounded-lg p-4">
                     <code className="text-sm">
                       <div className="text-green-600"># Install MCP server</div>
-                      <div>npm install -g documentation-mcp</div>
+                      <div>npm install -g cogni-docs</div>
                       <div className="text-green-600 mt-2"># Configure in your AI app</div>
                       <div>{`"mcpServers": {`}</div>
                       <div className="ml-4">{`"docs": {`}</div>
-                      <div className="ml-8">{`"command": "documentation-mcp"`}</div>
+                      <div className="ml-8">{`"command": "cogni-docs"`}</div>
                       <div className="ml-4">{`}`}</div>
                       <div>{`}`}</div>
                     </code>

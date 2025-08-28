@@ -16,7 +16,7 @@ const transports: Map<string, ElysiaStreamingHttpTransport> = new Map();
 
 export function startMcpServer(app: Elysia) {
   const server = new McpServer({
-    name: "documentation-mcp",
+    name: "cogni-docs",
     version: "1.0.0",
   });
 

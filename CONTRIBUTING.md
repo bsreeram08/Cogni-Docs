@@ -1,4 +1,4 @@
-# Contributing to documentation-mcp
+# Contributing to cogni-docs
 
 Thank you for considering a contribution! This project aims to provide a local-first, provider-agnostic MCP server for documentation ingestion and search.
 

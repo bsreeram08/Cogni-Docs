@@ -12,7 +12,7 @@ This project provides a Model Context Protocol (MCP) server and an upload server
 
 ```bash
 git clone <repository>
-cd documentation-mcp
+cd cogni-docs
 bun install
 ```
 
@@ -106,7 +106,7 @@ Add an entry for this server in your Favorite MCP config. Recommended (Streamabl
 ```json
 {
   "mcpServers": {
-    "documentation-mcp": {
+    "cogni-docs": {
       "serverUrl": "http://localhost:3001/mcp"
     }
   }

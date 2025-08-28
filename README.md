@@ -98,7 +98,7 @@ flowchart LR
 ```bash
 # Clone and install
 git clone <repository>
-cd documentation-mcp
+cd cogni-docs
 bun install
 
 # Configure for local processing
