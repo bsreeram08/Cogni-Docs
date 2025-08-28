@@ -99,9 +99,25 @@ Notes:
 - Avoid trailing slashes in endpoints.
 - `GET /mcp` intentionally returns `405 Method Not Allowed` (this server replies with JSON over HTTP; no unsolicited SSE stream).
 
+### MCP configuration (mcp_config.json)
+
+Add an entry for this server in your Favorite MCP config. Recommended (Streamable HTTP):
+
+```json
+{
+  "mcpServers": {
+    "documentation-mcp": {
+      "serverUrl": "http://localhost:3001/mcp"
+    }
+  }
+}
+```
+
+After saving, reload MCP servers in your app so the new configuration takes effect.
+
 ### Request flow
 
-- __Initialize__ (first request):
+- **Initialize** (first request):
 
   ```bash
   curl -i -s -X POST \
@@ -122,7 +138,7 @@ Notes:
 
   - The response includes header: `Mcp-Session-Id: <uuid>` (and `X-Request-Id` for tracing).
 
-- __Subsequent requests__ must include the session header:
+- **Subsequent requests** must include the session header:
 
   ```bash
   curl -s -X POST \
@@ -138,7 +154,7 @@ Notes:
         }'
   ```
 
-- __Terminate session__ (optional):
+- **Terminate session** (optional):
 
   ```bash
   curl -i -X DELETE -H "Mcp-Session-Id: $SESSION_ID" http://localhost:3001/mcp
@@ -180,12 +196,12 @@ You can optionally enable an agent-guided ingestion stage that aligns chunks to 
 
 ## 10) Troubleshooting
 
-- __Use non-watch mode__ for stability: `bun run upload-server:prod`.
-- __Missing Mcp-Session-Id__:
+- **Use non-watch mode** for stability: `bun run upload-server:prod`.
+- **Missing Mcp-Session-Id**:
   - After `initialize`, include `Mcp-Session-Id` on every subsequent POST `/mcp` request.
-- __Bad Request: Server not initialized__:
+- **Bad Request: Server not initialized**:
   - Your first POST must be a JSON-RPC `initialize` request with `params.protocolVersion`, `params.clientInfo`, and `params.capabilities`.
-- __Unsupported protocol version__:
+- **Unsupported protocol version**:
   - Omit the `Mcp-Protocol-Version` header or use a supported version. The JSON payload `protocolVersion` should remain (recommended: `2025-03-26`).
 - Chroma warning about "undefined embedding function":
   - Safe to ignore; embeddings are computed locally and passed explicitly to Chroma.
