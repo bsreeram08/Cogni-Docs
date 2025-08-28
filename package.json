@@ -1,6 +1,6 @@
 {
   "name": "cogni-docs",
-  "version": "1.2.0",
+  "version": "1.5.0",
   "description": "CogniDocs is a Model Context Protocol server for AI assistants to search and query documentation (local-first, provider-agnostic)",
   "type": "module",
   "author": {
