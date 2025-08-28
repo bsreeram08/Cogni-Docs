@@ -4,11 +4,7 @@
 
 export type UUID = string;
 
-export type MimeType =
-  | "text/plain"
-  | "text/html"
-  | "application/pdf"
-  | string;
+export type MimeType = "text/plain" | "text/html" | "application/pdf" | string;
 
 export interface DocumentSet {
   readonly id: UUID;

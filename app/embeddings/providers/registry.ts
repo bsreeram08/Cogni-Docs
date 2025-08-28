@@ -11,7 +11,7 @@ const providers = new Map<string, EmbeddingProviderFactory<any>>();
 
 export const registerEmbeddingProvider = <TOptions extends object>(
   id: string,
-  factory: EmbeddingProviderFactory<TOptions>
+  factory: EmbeddingProviderFactory<TOptions>,
 ): void => {
   if (providers.has(id)) return;
   providers.set(id, factory);

@@ -34,7 +34,7 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
         e.currentTarget.value = "";
       }
     },
-    [onFilesSelected]
+    [onFilesSelected],
   );
 
   const handleDragOver = useCallback((e: React.DragEvent): void => {
@@ -57,7 +57,7 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
         onFilesSelected(files);
       }
     },
-    [disabled, onFilesSelected]
+    [disabled, onFilesSelected],
   );
 
   const triggerBrowse = useCallback((): void => {
@@ -89,7 +89,9 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
           <h3 className="font-medium">
             {isDragOver ? "Drop files here" : "Click to upload or drag files here"}
           </h3>
-          <p className="text-sm text-muted-foreground">PDF, TXT, HTML, Markdown files up to 10MB each</p>
+          <p className="text-sm text-muted-foreground">
+            PDF, TXT, HTML, Markdown files up to 10MB each
+          </p>
         </div>
         <Label htmlFor="file-upload-hidden" className="cursor-pointer">
           <Button type="button" variant="outline" className="gap-2" disabled={disabled}>

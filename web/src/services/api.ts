@@ -35,9 +35,7 @@ const toIsoString = (value: unknown): string => {
   if (typeof value === "number") return new Date(value).toISOString();
   if (typeof value === "object" && value !== null) {
     // Attempt to parse date-like objects
-    const d = new Date(
-      String((value as { toString?: () => string }).toString?.() ?? "")
-    );
+    const d = new Date(String((value as { toString?: () => string }).toString?.() ?? ""));
     if (!Number.isNaN(d.getTime())) return d.toISOString();
   }
   return new Date().toISOString();
@@ -53,10 +51,7 @@ const mapServerSetToClient = (s: ServerDocumentSet): DocumentSet => ({
 });
 
 class ApiService {
-  private async fetchWithErrorHandling<T>(
-    url: string,
-    options?: RequestInit
-  ): Promise<T> {
+  private async fetchWithErrorHandling<T>(url: string, options?: RequestInit): Promise<T> {
     // Add timeout to prevent hanging requests
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
@@ -75,9 +70,7 @@ class ApiService {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(
-          errorData.error || `HTTP ${response.status}: ${response.statusText}`
-        );
+        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
       }
 
       return await response.json();
@@ -95,8 +88,7 @@ class ApiService {
 
   async listDocumentSets(): Promise<DocumentSet[]> {
     try {
-      const response =
-        await this.fetchWithErrorHandling<ListDocumentSetsResponse>("/sets");
+      const response = await this.fetchWithErrorHandling<ListDocumentSetsResponse>("/sets");
       return response.sets.map(mapServerSetToClient);
     } catch (error) {
       // Return mock data for development when API is unavailable
@@ -106,9 +98,9 @@ class ApiService {
   }
 
   async getDocumentSet(setId: string): Promise<DocumentSet> {
-    const payload = await this.fetchWithErrorHandling<
-      ServerDocumentSet | { error: string }
-    >(`/sets/${setId}`);
+    const payload = await this.fetchWithErrorHandling<ServerDocumentSet | { error: string }>(
+      `/sets/${setId}`,
+    );
     if ("error" in payload) throw new Error(payload.error);
     return mapServerSetToClient(payload);
   }
@@ -155,34 +147,23 @@ class ApiService {
   }
 
   async deleteDocument(setId: string, documentId: string): Promise<void> {
-    const response = await fetch(
-      `${API_BASE_URL}/sets/${setId}/documents/${documentId}`,
-      {
-        method: "DELETE",
-      }
-    );
+    const response = await fetch(`${API_BASE_URL}/sets/${setId}/documents/${documentId}`, {
+      method: "DELETE",
+    });
     if (!response.ok) {
       throw new Error(`Failed to delete document: ${response.statusText}`);
     }
   }
 
-  async createDocumentSet(
-    data: CreateDocumentSetRequest
-  ): Promise<DocumentSet> {
-    const payload = await this.fetchWithErrorHandling<ServerDocumentSet>(
-      "/sets",
-      {
-        method: "POST",
-        body: JSON.stringify(data),
-      }
-    );
+  async createDocumentSet(data: CreateDocumentSetRequest): Promise<DocumentSet> {
+    const payload = await this.fetchWithErrorHandling<ServerDocumentSet>("/sets", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
     return mapServerSetToClient(payload);
   }
 
-  async uploadDocuments(
-    setId: string,
-    files: FileList
-  ): Promise<UploadDocumentsResponse> {
+  async uploadDocuments(setId: string, files: FileList): Promise<UploadDocumentsResponse> {
     const formData = new FormData();
     Array.from(files).forEach((file) => {
       formData.append("files", file);
@@ -196,9 +177,7 @@ class ApiService {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(
-          errorData.error || `HTTP ${response.status}: ${response.statusText}`
-        );
+        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
       }
 
       return await response.json();

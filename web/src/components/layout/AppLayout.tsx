@@ -72,9 +72,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
               </div>
               <div>
                 <h1 className="text-lg font-bold">Documentation MCP</h1>
-                <p className="text-xs text-muted-foreground">
-                  Knowledge Base Manager
-                </p>
+                <p className="text-xs text-muted-foreground">Knowledge Base Manager</p>
               </div>
             </Link>
             <Button
@@ -121,9 +119,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium truncate">{user?.name}</p>
-                <p className="text-xs text-muted-foreground truncate">
-                  {user?.email}
-                </p>
+                <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
               </div>
             </div>
 
@@ -132,12 +128,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
                 <SettingsIcon className="h-4 w-4" />
                 Settings
               </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleLogout}
-                className="gap-2"
-              >
+              <Button variant="ghost" size="sm" onClick={handleLogout} className="gap-2">
                 <LogOutIcon className="h-4 w-4" />
                 Sign Out
               </Button>
@@ -151,11 +142,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
         {/* Mobile header */}
         <div className="sticky top-0 z-40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b lg:hidden">
           <div className="flex items-center justify-between px-4 py-3">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setSidebarOpen(true)}
-            >
+            <Button variant="ghost" size="sm" onClick={() => setSidebarOpen(true)}>
               <PanelLeftIcon className="h-5 w-5" />
             </Button>
             <div className="flex items-center gap-2">

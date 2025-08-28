@@ -5,20 +5,14 @@
 import { z } from "zod";
 import ids from "../../utils/ids.js";
 import type { Chunk } from "../../types.js";
-import type {
-  Chunker,
-  ChunkerInput,
-  ChunkingResult,
-} from "../chunker-interface.js";
+import type { Chunker, ChunkerInput, ChunkingResult } from "../chunker-interface.js";
 import { registerChunkerProvider } from "./registry.js";
 import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
 import { loadConfig } from "../../config/app-config.js";
 import { createEmbeddingService } from "../../embeddings/embedding-factory.js";
 
 const OptionsSchema = z.object({
-  strategy: z
-    .enum(["recursive", "intelligent", "semantic"])
-    .default("recursive"),
+  strategy: z.enum(["recursive", "intelligent", "semantic"]).default("recursive"),
   chunkSize: z.number().min(100).max(10000).default(3000),
   chunkOverlap: z.number().min(0).max(1000).default(150),
   separators: z.array(z.string()).default([]),
@@ -51,28 +45,11 @@ const detectContentType = (content: string): ContentType => {
     /```[\s\S]*?```/,
     /\[.*\]\(.*\)/,
   ];
-  const htmlPatterns = [
-    /<html/i,
-    /<body/i,
-    /<div/i,
-    /<p>/i,
-    /<h[1-6]>/i,
-    /<script/i,
-    /<style/i,
-  ];
+  const htmlPatterns = [/<html/i, /<body/i, /<div/i, /<p>/i, /<h[1-6]>/i, /<script/i, /<style/i];
 
-  const codeScore = codePatterns.reduce(
-    (s, r) => s + (r.test(content) ? 1 : 0),
-    0
-  );
-  const mdScore = markdownPatterns.reduce(
-    (s, r) => s + (r.test(content) ? 1 : 0),
-    0
-  );
-  const htmlScore = htmlPatterns.reduce(
-    (s, r) => s + (r.test(content) ? 1 : 0),
-    0
-  );
+  const codeScore = codePatterns.reduce((s, r) => s + (r.test(content) ? 1 : 0), 0);
+  const mdScore = markdownPatterns.reduce((s, r) => s + (r.test(content) ? 1 : 0), 0);
+  const htmlScore = htmlPatterns.reduce((s, r) => s + (r.test(content) ? 1 : 0), 0);
 
   if (
     (codeScore > 0 && mdScore > 0) ||
@@ -89,21 +66,9 @@ const detectContentType = (content: string): ContentType => {
 
 const detectProgrammingLanguage = (content: string): string => {
   const patterns: Record<string, RegExp[]> = {
-    typescript: [
-      /^import\s+.*from\s+['"].*['"];?$/m,
-      /^export\s+(interface|type|class)/m,
-    ],
-    javascript: [
-      /^const\s+\w+\s*=\s*require\(/m,
-      /^module\.exports\s*=/m,
-      /^function\s+\w+/m,
-    ],
-    python: [
-      /^def\s+\w+/m,
-      /^import\s+\w+/m,
-      /^from\s+\w+\s+import/m,
-      /^class\s+\w+:/m,
-    ],
+    typescript: [/^import\s+.*from\s+['"].*['"];?$/m, /^export\s+(interface|type|class)/m],
+    javascript: [/^const\s+\w+\s*=\s*require\(/m, /^module\.exports\s*=/m, /^function\s+\w+/m],
+    python: [/^def\s+\w+/m, /^import\s+\w+/m, /^from\s+\w+\s+import/m, /^class\s+\w+:/m],
   };
   for (const [lang, regs] of Object.entries(patterns)) {
     const m = regs.reduce((c, r) => c + (r.test(content) ? 1 : 0), 0);
@@ -137,7 +102,7 @@ const getLanguageSpecificSeparators = (language: string): string[] => {
 
 const getTypeAwareDefaults = (
   type: ContentType,
-  base: { chunkSize: number; chunkOverlap: number }
+  base: { chunkSize: number; chunkOverlap: number },
 ): { chunkSize: number; chunkOverlap: number; separators?: string[] } => {
   switch (type) {
     case "code":
@@ -146,16 +111,7 @@ const getTypeAwareDefaults = (
         chunkOverlap: Math.max(base.chunkOverlap, 120),
       };
     case "markdown": {
-      const separators = [
-        "\n## ",
-        "\n### ",
-        "\n#### ",
-        "\n\n",
-        "\n",
-        ". ",
-        " ",
-        "",
-      ];
+      const separators = ["\n## ", "\n### ", "\n#### ", "\n\n", "\n", ". ", " ", ""];
       return {
         chunkSize: base.chunkSize,
         chunkOverlap: base.chunkOverlap,
@@ -197,10 +153,7 @@ const getTypeAwareDefaults = (
 };
 
 // --- Semantic utilities ---
-const cosineSimilarity = (
-  a: readonly number[],
-  b: readonly number[]
-): number => {
+const cosineSimilarity = (a: readonly number[], b: readonly number[]): number => {
   let dot = 0;
   let na = 0;
   let nb = 0;
@@ -220,7 +173,7 @@ const mergeAdjacentBySimilarity = async (
   parts: readonly string[],
   threshold: number,
   maxMergedChars: number,
-  batchSize: number
+  batchSize: number,
 ): Promise<string[]> => {
   if (parts.length <= 1) return parts.slice();
   const config = loadConfig();
@@ -261,8 +214,7 @@ const createLangchain = (options: Options): Chunker => {
     strategy: options.strategy,
 
     async chunk(input: ChunkerInput, overrides): Promise<ChunkingResult> {
-      const strategy =
-        (overrides?.strategy as Options["strategy"]) ?? options.strategy;
+      const strategy = (overrides?.strategy as Options["strategy"]) ?? options.strategy;
 
       // Compute effective split configuration once
       const base = {
@@ -273,10 +225,7 @@ const createLangchain = (options: Options): Chunker => {
       let chunkOverlap = base.chunkOverlap;
       let separators: string[] | undefined = options.separators;
 
-      if (
-        (strategy === "intelligent" || strategy === "semantic") &&
-        options.contentTypeAware
-      ) {
+      if ((strategy === "intelligent" || strategy === "semantic") && options.contentTypeAware) {
         const contentType = detectContentType(input.text);
         const typeCfg = getTypeAwareDefaults(contentType, base);
         chunkSize = typeCfg.chunkSize;
@@ -303,7 +252,7 @@ const createLangchain = (options: Options): Chunker => {
               parts,
               options.semanticSimilarityThreshold,
               options.semanticMaxMergeChars,
-              options.semanticBatchSize
+              options.semanticBatchSize,
             )
           : parts;
 

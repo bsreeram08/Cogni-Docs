@@ -8,6 +8,7 @@ import type {
   EmbeddingRequest,
   EmbeddingResponse,
 } from "../../embedding-interface.js";
+import { logger } from "../../../utils/logger.js";
 
 export type TransformersDevice = "auto" | "wasm" | "webgpu";
 export type PoolingStrategy = "mean" | "cls" | "max";
@@ -35,18 +36,16 @@ type FeatureOutput = Vector1D | Matrix2D | TensorWithToList | TensorWithData;
 
 type FeatureExtraction = (
   inputs: string | string[],
-  options: { pooling: PoolingStrategy; normalize: boolean }
+  options: { pooling: PoolingStrategy; normalize: boolean },
 ) => Promise<FeatureOutput>;
 
 export const createTransformersJsEmbeddingService = (
-  config: TransformersJsConfig
+  config: TransformersJsConfig,
 ): EmbeddingService => {
   let embeddingPipeline: FeatureExtraction | null = null;
   let modelDimensions = 384; // default to MiniLM dims for compatibility
 
-  const resolveDevice = (
-    device: TransformersDevice
-  ): { readonly device: TransformersDevice } => {
+  const resolveDevice = (device: TransformersDevice): { readonly device: TransformersDevice } => {
     // Server runtime has no WebGPU; prefer WASM when auto
     const dev: TransformersDevice = device === "auto" ? "wasm" : device;
     return { device: dev };
@@ -55,15 +54,15 @@ export const createTransformersJsEmbeddingService = (
   const initializePipeline = async (): Promise<FeatureExtraction> => {
     if (!embeddingPipeline) {
       const deviceCfg = resolveDevice(config.device);
-      console.log(
+      logger.info(
         `Initializing Transformers.js embedding pipeline with model: ${
           config.model
-        } (${String(deviceCfg.device)})`
+        } (${String(deviceCfg.device)})`,
       );
       embeddingPipeline = (await pipeline(
         "feature-extraction",
         config.model,
-        deviceCfg
+        deviceCfg,
       )) as FeatureExtraction;
 
       // Probe dimensions once
@@ -77,10 +76,7 @@ export const createTransformersJsEmbeddingService = (
           modelDimensions = dims;
         }
       } catch (err) {
-        console.warn(
-          "Transformers.js: could not determine model dimensions; using default",
-          err
-        );
+        logger.warn(err, "Transformers.js: could not determine model dimensions; using default");
       }
     }
     return embeddingPipeline;
@@ -104,7 +100,7 @@ export const createTransformersJsEmbeddingService = (
     return Array.isArray(first);
   };
 
-  const to1D = (a: Vector1D | Matrix2D): Vector1D => (is2D(a) ? a[0] ?? [] : a);
+  const to1D = (a: Vector1D | Matrix2D): Vector1D => (is2D(a) ? (a[0] ?? []) : a);
 
   const extractArray = (out: unknown): Vector1D | Matrix2D => {
     // Try tensor-like with tolist()
@@ -125,9 +121,7 @@ export const createTransformersJsEmbeddingService = (
     return arr.length;
   };
 
-  const generateEmbeddings = async (
-    request: EmbeddingRequest
-  ): Promise<EmbeddingResponse> => {
+  const generateEmbeddings = async (request: EmbeddingRequest): Promise<EmbeddingResponse> => {
     if (request.texts.length === 0) {
       return { embeddings: [], dimensions: modelDimensions };
     }
@@ -165,10 +159,7 @@ export const createTransformersJsEmbeddingService = (
           }
         }
       } catch (error) {
-        console.error(
-          "Transformers.js embedding batch failed, falling back:",
-          error
-        );
+        console.error("Transformers.js embedding batch failed, falling back:", error);
         for (const text of batch) {
           try {
             const r = await fe(text, {
@@ -196,9 +187,7 @@ export const createTransformersJsEmbeddingService = (
   const healthCheck = async (): Promise<boolean> => {
     try {
       const test = await generateEmbeddings({ texts: ["test"] });
-      return (
-        test.embeddings.length > 0 && test.embeddings[0].some((v) => v !== 0)
-      );
+      return test.embeddings.length > 0 && test.embeddings[0].some((v) => v !== 0);
     } catch (e) {
       console.error("Transformers.js health check failed:", e);
       return false;
@@ -212,4 +201,3 @@ export const createTransformersJsEmbeddingService = (
     healthCheck,
   };
 };
-

@@ -1,6 +1,6 @@
-# Documentation MCP Server - Flexible Backend
+# CogniDocs - Documentation MCP Server - Flexible Backend
 
-A Model Context Protocol (MCP) server that provides AI assistants with the ability to search and query documentation. Now supports **flexible backend configurations** to meet different privacy and infrastructure requirements.
+CogniDocs is a Model Context Protocol (MCP) server that provides AI assistants with the ability to search and query documentation. Now supports **flexible backend configurations** to meet different privacy and infrastructure requirements.
 
 ## 🆕 What's New - Flexible Backend Architecture
 
@@ -48,6 +48,12 @@ Notes:
   - `intelligent`: content-type–aware splitting (adapts separators/size for code, markdown, html, etc.).
   - `semantic`: initial split + adjacent-merge when cosine similarity of embeddings is above a threshold.
 - The Chonkie provider normalizes outputs to strings so `Chunk.text` is always a string.
+
+## 🧭 Agentic Document Processing (ingestion, optional) (TODO)
+
+Agent-guided chunking and annotation can dramatically improve search quality for large, multi-topic docs by aligning chunks to topic boundaries and enriching them with metadata (topic tags, section headings, code language, entities, summaries, and quality scores). This is designed to be an optional, provider-agnostic stage at ingestion time.
+
+Learn more: see `docs/agentic-processing.md`.
 
 ## 🏗️ Architecture
 

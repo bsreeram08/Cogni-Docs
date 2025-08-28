@@ -19,9 +19,7 @@ export const useAuth = () => {
   return context;
 };
 
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
-  children,
-}) => {
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [authState, setAuthState] = useState<AuthState>({
     user: null,
     isAuthenticated: false,
@@ -72,11 +70,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
 
-  const register = async (
-    email: string,
-    _password: string,
-    name: string
-  ): Promise<void> => {
+  const register = async (email: string, _password: string, name: string): Promise<void> => {
     try {
       // TODO: Replace with actual API call
       // For now, create a mock user

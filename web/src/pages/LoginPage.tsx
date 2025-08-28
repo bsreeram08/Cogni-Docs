@@ -28,9 +28,7 @@ export const LoginPage: React.FC = () => {
       navigate("/dashboard");
     } catch (err) {
       console.error(err);
-      setError(
-        "Invalid email or password. Please check your credentials and try again."
-      );
+      setError("Invalid email or password. Please check your credentials and try again.");
     } finally {
       setIsLoading(false);
     }
@@ -65,10 +63,7 @@ export const LoginPage: React.FC = () => {
                 <Label htmlFor="password" className="text-sm font-medium">
                   Password
                 </Label>
-                <Link
-                  to="/forgot-password"
-                  className="text-sm text-primary hover:underline"
-                >
+                <Link to="/forgot-password" className="text-sm text-primary hover:underline">
                   Forgot password?
                 </Link>
               </div>
@@ -134,10 +129,7 @@ export const LoginPage: React.FC = () => {
             </div>
 
             <div className="mt-4 text-center">
-              <Link
-                to="/register"
-                className="text-sm text-primary hover:underline font-medium"
-              >
+              <Link to="/register" className="text-sm text-primary hover:underline font-medium">
                 Create your account →
               </Link>
             </div>

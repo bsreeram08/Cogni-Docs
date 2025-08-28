@@ -26,10 +26,10 @@ const defaultOptions: Required<RetryOptions> = {
 const isRateLimitError = (error: any): boolean => {
   // Check for common rate limit indicators
   if (error?.status === 429) return true;
-  if (error?.code === 'RATE_LIMIT_EXCEEDED') return true;
-  if (error?.message?.toLowerCase().includes('rate limit')) return true;
-  if (error?.message?.toLowerCase().includes('quota exceeded')) return true;
-  if (error?.message?.toLowerCase().includes('too many requests')) return true;
+  if (error?.code === "RATE_LIMIT_EXCEEDED") return true;
+  if (error?.message?.toLowerCase().includes("rate limit")) return true;
+  if (error?.message?.toLowerCase().includes("quota exceeded")) return true;
+  if (error?.message?.toLowerCase().includes("too many requests")) return true;
   return false;
 };
 
@@ -38,21 +38,21 @@ const calculateDelay = (
   baseDelayMs: number,
   maxDelayMs: number,
   backoffMultiplier: number,
-  jitter: boolean
+  jitter: boolean,
 ): number => {
   let delay = baseDelayMs * Math.pow(backoffMultiplier, attempt - 1);
-  
+
   if (jitter) {
     // Add random jitter to prevent thundering herd
     delay = delay * (0.5 + Math.random() * 0.5);
   }
-  
+
   return Math.min(delay, maxDelayMs);
 };
 
 export const withRetry = async <T>(
   fn: () => Promise<T>,
-  options: RetryOptions = {}
+  options: RetryOptions = {},
 ): Promise<T> => {
   const opts = { ...defaultOptions, ...options };
   let lastError: Error | null = null;
@@ -62,7 +62,7 @@ export const withRetry = async <T>(
       return await fn();
     } catch (error) {
       lastError = error as Error;
-      
+
       // Don't retry if it's not a rate limit error
       if (!isRateLimitError(error)) {
         throw error;
@@ -78,23 +78,23 @@ export const withRetry = async <T>(
         opts.baseDelayMs,
         opts.maxDelayMs,
         opts.backoffMultiplier,
-        opts.jitter
+        opts.jitter,
       );
 
       console.warn(
-        `Rate limit hit, retrying in ${Math.round(delay)}ms (attempt ${attempt}/${opts.maxAttempts})`
+        `Rate limit hit, retrying in ${Math.round(delay)}ms (attempt ${attempt}/${opts.maxAttempts})`,
       );
 
-      await new Promise(resolve => setTimeout(resolve, delay));
+      await new Promise((resolve) => setTimeout(resolve, delay));
     }
   }
 
   if (!lastError) {
-    throw new Error('Unexpected error: No attempts were made');
+    throw new Error("Unexpected error: No attempts were made");
   }
 
   const retryError: RetryError = new Error(
-    `Failed after ${opts.maxAttempts} attempts. Last error: ${lastError.message}`
+    `Failed after ${opts.maxAttempts} attempts. Last error: ${lastError.message}`,
   ) as RetryError;
   retryError.lastError = lastError;
   retryError.attemptsMade = opts.maxAttempts;
@@ -104,22 +104,18 @@ export const withRetry = async <T>(
 export const withBatchRetry = async <T>(
   items: T[],
   processFn: (item: T) => Promise<void>,
-  options: RetryOptions & { batchSize?: number } = {}
+  options: RetryOptions & { batchSize?: number } = {},
 ): Promise<void> => {
   const { batchSize = 5, ...retryOptions } = options;
-  
+
   for (let i = 0; i < items.length; i += batchSize) {
     const batch = items.slice(i, i + batchSize);
-    
-    await Promise.all(
-      batch.map(item => 
-        withRetry(() => processFn(item), retryOptions)
-      )
-    );
-    
+
+    await Promise.all(batch.map((item) => withRetry(() => processFn(item), retryOptions)));
+
     // Small delay between batches to avoid overwhelming the API
     if (i + batchSize < items.length) {
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
     }
   }
 };

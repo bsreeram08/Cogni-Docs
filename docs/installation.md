@@ -89,15 +89,76 @@ Expected JSON includes `status: "healthy"`, `storage: chroma`, `embeddings: xeno
 
 ## 7) Connect MCP Client (Windsurf / Claude Desktop)
 
-Configure the MyContext MCP server with these endpoints:
+Configure the MyContext MCP server with the Streamable HTTP endpoint:
 
-- SSE (GET): `http://localhost:3001/sse`
-- Messages (POST): `http://localhost:3001/messages`
+- MCP (POST): `http://localhost:3001/mcp`
 
-Tips:
+Notes:
 
-- After server restarts or first-time errors, refresh/reload MCP servers in the IDE to establish a clean session.
+- After server restarts, reload MCP servers in your IDE to establish a clean session.
 - Avoid trailing slashes in endpoints.
+- `GET /mcp` intentionally returns `405 Method Not Allowed` (this server replies with JSON over HTTP; no unsolicited SSE stream).
+
+### MCP configuration (mcp_config.json)
+
+Add an entry for this server in your Favorite MCP config. Recommended (Streamable HTTP):
+
+```json
+{
+  "mcpServers": {
+    "documentation-mcp": {
+      "serverUrl": "http://localhost:3001/mcp"
+    }
+  }
+}
+```
+
+After saving, reload MCP servers in your app so the new configuration takes effect.
+
+### Request flow
+
+- **Initialize** (first request):
+
+  ```bash
+  curl -i -s -X POST \
+    -H 'Content-Type: application/json' \
+    -H 'Accept: application/json, text/event-stream' \
+    http://localhost:3001/mcp \
+    -d '{
+          "jsonrpc":"2.0",
+          "id":"1",
+          "method":"initialize",
+          "params":{
+            "clientInfo":{"name":"curl","version":"0"},
+            "protocolVersion":"2025-03-26",
+            "capabilities":{}
+          }
+        }'
+  ```
+
+  - The response includes header: `Mcp-Session-Id: <uuid>` (and `X-Request-Id` for tracing).
+
+- **Subsequent requests** must include the session header:
+
+  ```bash
+  curl -s -X POST \
+    -H 'Content-Type: application/json' \
+    -H 'Accept: application/json, text/event-stream' \
+    -H "Mcp-Session-Id: $SESSION_ID" \
+    http://localhost:3001/mcp \
+    -d '{
+          "jsonrpc":"2.0",
+          "id":"2",
+          "method":"tools/list",
+          "params":{}
+        }'
+  ```
+
+- **Terminate session** (optional):
+
+  ```bash
+  curl -i -X DELETE -H "Mcp-Session-Id: $SESSION_ID" http://localhost:3001/mcp
+  ```
 
 ## 8) Ingest Documentation (Optional)
 
@@ -129,12 +190,19 @@ Example flow:
 2. Search a set, e.g., `setId=Pinelabs_API`, `query="how to create a UPI transaction"`.
 3. If relevant hits found, run `agentic_search` to get a concise extractive answer.
 
+## 9a) Advanced: Agentic document processing (optional)
+
+You can optionally enable an agent-guided ingestion stage that aligns chunks to topic boundaries and enriches them with metadata (topic tags, section headings, code language, entities, summaries, and quality scores). This improves retrieval precision for large, multi-topic docs. See `docs/agentic-processing.md` for the design and recommended schema. The feature is designed to be toggleable and provider-agnostic.
+
 ## 10) Troubleshooting
 
-- SSE terminated / transport error:
-  - Use non-watch mode: `bun run upload-server:prod`.
-  - Refresh MCP servers in the IDE to create a fresh GET `/sse` session.
-  - Ensure the client uses GET `/sse` and POST `/messages` (a `POST /sse` is invalid and will fail).
+- **Use non-watch mode** for stability: `bun run upload-server:prod`.
+- **Missing Mcp-Session-Id**:
+  - After `initialize`, include `Mcp-Session-Id` on every subsequent POST `/mcp` request.
+- **Bad Request: Server not initialized**:
+  - Your first POST must be a JSON-RPC `initialize` request with `params.protocolVersion`, `params.clientInfo`, and `params.capabilities`.
+- **Unsupported protocol version**:
+  - Omit the `Mcp-Protocol-Version` header or use a supported version. The JSON payload `protocolVersion` should remain (recommended: `2025-03-26`).
 - Chroma warning about "undefined embedding function":
   - Safe to ignore; embeddings are computed locally and passed explicitly to Chroma.
 - Health check failing:

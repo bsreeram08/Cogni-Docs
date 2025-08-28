@@ -21,11 +21,7 @@ const OptionsSchema = z.object({
 
 const normalize = (s: string): string => s.replace(/\s+/g, " ").trim();
 
-const makeChunks = (
-  input: ChunkerInput,
-  chunkSize: number,
-  overlap: number
-): readonly Chunk[] => {
+const makeChunks = (input: ChunkerInput, chunkSize: number, overlap: number): readonly Chunk[] => {
   const content = normalize(input.text);
   const size = Math.max(1, chunkSize);
   const ov = Math.max(0, Math.min(overlap, Math.floor(size / 2)));
@@ -35,7 +31,13 @@ const makeChunks = (
   while (start < content.length) {
     const end = Math.min(content.length, start + size);
     const window = content.slice(start, end);
-    chunks.push({ id: ids.newId(), setId: input.setId, documentId: input.documentId, ordinal, text: window });
+    chunks.push({
+      id: ids.newId(),
+      setId: input.setId,
+      documentId: input.documentId,
+      ordinal,
+      text: window,
+    });
     if (end === content.length) break;
     start = end - ov;
     ordinal += 1;

@@ -23,6 +23,15 @@ const AppConfigSchema = z.object({
 
   // Document processing
   chunking: ProviderConfigSchema,
+
+  // Optional agentic processing stage
+  agent: z
+    .object({
+      enabled: z.boolean().default(false),
+      name: z.string().default("heuristic"),
+      options: z.record(z.unknown()).default({}),
+    })
+    .default({ enabled: false, name: "heuristic", options: {} }),
 });
 
 export type AppConfig = z.infer<typeof AppConfigSchema>;
@@ -43,17 +52,23 @@ const parseJSON = (value: string | undefined): Record<string, unknown> => {
   return {};
 };
 
+const parseBoolean = (value: string | undefined, fallback: boolean): boolean => {
+  if (!value) return fallback;
+  const v = value.trim().toLowerCase();
+  if (["1", "true", "yes", "on"].includes(v)) return true;
+  if (["0", "false", "no", "off"].includes(v)) return false;
+  return fallback;
+};
+
 export const loadConfig = (): AppConfig => {
-  const storageName =
-    process.env.STORAGE_NAME || process.env.STORAGE_PROVIDER || "chroma";
+  const storageName = process.env.STORAGE_NAME || process.env.STORAGE_PROVIDER || "chroma";
   const storageOptions = {
     ...parseJSON(process.env.STORAGE_OPTIONS),
     // Back-compat fallback
     url: process.env.CHROMA_URL || undefined,
   };
 
-  const embeddingsName =
-    process.env.EMBEDDINGS_NAME || process.env.EMBEDDING_PROVIDER || "xenova";
+  const embeddingsName = process.env.EMBEDDINGS_NAME || process.env.EMBEDDING_PROVIDER || "xenova";
   const embeddingsOptions = {
     ...parseJSON(process.env.EMBEDDINGS_OPTIONS),
     // Back-compat fallbacks
@@ -61,8 +76,7 @@ export const loadConfig = (): AppConfig => {
     maxBatchSize: parseNumber(process.env.MAX_BATCH_SIZE, 0) || undefined,
   };
 
-  const chunkingName =
-    process.env.CHUNKING_NAME || process.env.CHUNKING_PROVIDER || "langchain";
+  const chunkingName = process.env.CHUNKING_NAME || process.env.CHUNKING_PROVIDER || "langchain";
   const chunkingOptions = {
     ...parseJSON(process.env.CHUNKING_OPTIONS),
     // Back-compat fallbacks for prior numeric settings
@@ -71,11 +85,16 @@ export const loadConfig = (): AppConfig => {
     maxSize: parseNumber(process.env.MAX_CHUNK_SIZE, 5000),
   };
 
+  const agentEnabled = parseBoolean(process.env.AGENT_ENABLED, false);
+  const agentName = process.env.AGENT_NAME || "heuristic";
+  const agentOptions = parseJSON(process.env.AGENT_OPTIONS);
+
   const rawConfig = {
     httpPort: parseNumber(process.env.HTTP_PORT, 8787),
     storage: { name: storageName, options: storageOptions },
     embeddings: { name: embeddingsName, options: embeddingsOptions },
     chunking: { name: chunkingName, options: chunkingOptions },
+    agent: { enabled: agentEnabled, name: agentName, options: agentOptions },
   } satisfies AppConfig;
 
   // Validate configuration using Zod
@@ -83,9 +102,7 @@ export const loadConfig = (): AppConfig => {
 
   if (!result.success) {
     console.error("Configuration validation failed:", result.error.format());
-    throw new Error(
-      "Invalid configuration. Please check your environment variables."
-    );
+    throw new Error("Invalid configuration. Please check your environment variables.");
   }
 
   return result.data;

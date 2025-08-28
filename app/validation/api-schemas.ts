@@ -8,10 +8,10 @@ import { z } from "zod";
 export const UUIDSchema = z.string().uuid();
 export const MimeTypeSchema = z.enum([
   "text/plain",
-  "text/html", 
+  "text/html",
   "application/pdf",
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
 ]);
 
 // Document Set schemas
@@ -27,7 +27,7 @@ export const DocumentSetResponseSchema = z.object({
   createdAt: z.string().datetime(),
 });
 
-// Document schemas  
+// Document schemas
 export const UploadDocumentSchema = z.object({
   setId: UUIDSchema,
   filename: z.string().min(1).max(255),
@@ -112,7 +112,11 @@ export const validateRequest = <T>(schema: z.ZodSchema<T>, data: unknown): T => 
   return result.data;
 };
 
-export const createErrorResponse = (code: string, message: string, details?: unknown): ErrorResponse => {
+export const createErrorResponse = (
+  code: string,
+  message: string,
+  details?: unknown,
+): ErrorResponse => {
   return {
     error: { code, message, details },
     timestamp: new Date().toISOString(),

@@ -1,0 +1,5 @@
+#!/usr/bin/env sh
+set -e
+printf "\033[36mhusky pre-push: typecheck\033[0m\n"
+# Typecheck before pushing
+bun run typecheck

@@ -8,14 +8,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
 import { AuthLayout } from "@/components/layout/AuthLayout";
 import { useAuth } from "@/contexts/AuthContext";
-import {
-  EyeIcon,
-  EyeOffIcon,
-  AlertCircleIcon,
-  UserPlusIcon,
-  CheckIcon,
-  XIcon,
-} from "lucide-react";
+import { EyeIcon, EyeOffIcon, AlertCircleIcon, UserPlusIcon, CheckIcon, XIcon } from "lucide-react";
 
 export const RegisterPage: React.FC = () => {
   const [name, setName] = useState("");
@@ -40,8 +33,7 @@ export const RegisterPage: React.FC = () => {
   };
 
   const passwordStrength = getPasswordStrength(password);
-  const passwordsMatch =
-    password && confirmPassword && password === confirmPassword;
+  const passwordsMatch = password && confirmPassword && password === confirmPassword;
 
   const handleSubmit = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault();
@@ -167,16 +159,14 @@ export const RegisterPage: React.FC = () => {
               {password && (
                 <div className="space-y-2">
                   <div className="flex items-center justify-between text-xs">
-                    <span className="text-muted-foreground">
-                      Password strength
-                    </span>
+                    <span className="text-muted-foreground">Password strength</span>
                     <span
                       className={`font-medium ${
                         passwordStrength >= 75
                           ? "text-green-600"
                           : passwordStrength >= 50
-                          ? "text-yellow-600"
-                          : "text-red-600"
+                            ? "text-yellow-600"
+                            : "text-red-600"
                       }`}
                     >
                       {getStrengthText(passwordStrength)}
@@ -230,9 +220,7 @@ export const RegisterPage: React.FC = () => {
                   ) : (
                     <>
                       <XIcon className="h-3 w-3 text-red-600" />
-                      <span className="text-red-600">
-                        Passwords don't match
-                      </span>
+                      <span className="text-red-600">Passwords don't match</span>
                     </>
                   )}
                 </div>
@@ -278,10 +266,7 @@ export const RegisterPage: React.FC = () => {
             </div>
 
             <div className="mt-4 text-center">
-              <Link
-                to="/login"
-                className="text-sm text-primary hover:underline font-medium"
-              >
+              <Link to="/login" className="text-sm text-primary hover:underline font-medium">
                 Sign in instead →
               </Link>
             </div>
