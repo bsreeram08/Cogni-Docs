@@ -42,6 +42,13 @@ export interface DocumentMetadata {
   category?: string; // "troubleshooting" | "examples" | "api_reference" | "instructions"
   keywords: string[];
   chunk_index: number;
+  // Agentic annotations (flat, vector-store friendly)
+  section_heading?: string;
+  topic_tags?: string[];
+  code_languages?: string[];
+  entities?: string[];
+  summary?: string;
+  quality_score?: number; // 0..1
 }
 
 export interface SearchResult {

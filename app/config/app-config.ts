@@ -23,6 +23,15 @@ const AppConfigSchema = z.object({
 
   // Document processing
   chunking: ProviderConfigSchema,
+
+  // Optional agentic processing stage
+  agent: z
+    .object({
+      enabled: z.boolean().default(false),
+      name: z.string().default("heuristic"),
+      options: z.record(z.unknown()).default({}),
+    })
+    .default({ enabled: false, name: "heuristic", options: {} }),
 });
 
 export type AppConfig = z.infer<typeof AppConfigSchema>;
@@ -41,6 +50,17 @@ const parseJSON = (value: string | undefined): Record<string, unknown> => {
       return obj as Record<string, unknown>;
   } catch {}
   return {};
+};
+
+const parseBoolean = (
+  value: string | undefined,
+  fallback: boolean
+): boolean => {
+  if (!value) return fallback;
+  const v = value.trim().toLowerCase();
+  if (["1", "true", "yes", "on"].includes(v)) return true;
+  if (["0", "false", "no", "off"].includes(v)) return false;
+  return fallback;
 };
 
 export const loadConfig = (): AppConfig => {
@@ -71,11 +91,16 @@ export const loadConfig = (): AppConfig => {
     maxSize: parseNumber(process.env.MAX_CHUNK_SIZE, 5000),
   };
 
+  const agentEnabled = parseBoolean(process.env.AGENT_ENABLED, false);
+  const agentName = process.env.AGENT_NAME || "heuristic";
+  const agentOptions = parseJSON(process.env.AGENT_OPTIONS);
+
   const rawConfig = {
     httpPort: parseNumber(process.env.HTTP_PORT, 8787),
     storage: { name: storageName, options: storageOptions },
     embeddings: { name: embeddingsName, options: embeddingsOptions },
     chunking: { name: chunkingName, options: chunkingOptions },
+    agent: { enabled: agentEnabled, name: agentName, options: agentOptions },
   } satisfies AppConfig;
 
   // Validate configuration using Zod

@@ -185,6 +185,28 @@ export class ChromaStorage implements StorageService {
             page_number: doc.metadata.page_number
               ? Number(doc.metadata.page_number)
               : undefined,
+            // Agentic annotation fields (store arrays as CSV strings)
+            section_heading: doc.metadata.section_heading || undefined,
+            topic_tags: Array.isArray(doc.metadata.topic_tags)
+              ? doc.metadata.topic_tags.join(",")
+              : doc.metadata.topic_tags
+              ? String(doc.metadata.topic_tags)
+              : undefined,
+            code_languages: Array.isArray(doc.metadata.code_languages)
+              ? doc.metadata.code_languages.join(",")
+              : doc.metadata.code_languages
+              ? String(doc.metadata.code_languages)
+              : undefined,
+            entities: Array.isArray(doc.metadata.entities)
+              ? doc.metadata.entities.join(",")
+              : doc.metadata.entities
+              ? String(doc.metadata.entities)
+              : undefined,
+            summary: doc.metadata.summary || undefined,
+            quality_score:
+              typeof doc.metadata.quality_score === "number"
+                ? Number(doc.metadata.quality_score)
+                : undefined,
           })),
         });
       }
@@ -234,6 +256,29 @@ export class ChromaStorage implements StorageService {
           // Reconstruct keywords array from comma-separated string
           if (typeof metadata.keywords === "string" && metadata.keywords) {
             metadata.keywords = metadata.keywords
+              .split(",")
+              .map((k: string) => k.trim())
+              .filter((k: string) => k);
+          }
+
+          // Reconstruct agentic arrays
+          if (typeof metadata.topic_tags === "string" && metadata.topic_tags) {
+            metadata.topic_tags = metadata.topic_tags
+              .split(",")
+              .map((k: string) => k.trim())
+              .filter((k: string) => k);
+          }
+          if (
+            typeof metadata.code_languages === "string" &&
+            metadata.code_languages
+          ) {
+            metadata.code_languages = metadata.code_languages
+              .split(",")
+              .map((k: string) => k.trim())
+              .filter((k: string) => k);
+          }
+          if (typeof metadata.entities === "string" && metadata.entities) {
+            metadata.entities = metadata.entities
               .split(",")
               .map((k: string) => k.trim())
               .filter((k: string) => k);

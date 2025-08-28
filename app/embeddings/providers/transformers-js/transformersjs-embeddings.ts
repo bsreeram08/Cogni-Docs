@@ -8,6 +8,7 @@ import type {
   EmbeddingRequest,
   EmbeddingResponse,
 } from "../../embedding-interface.js";
+import { logger } from "../../../utils/logger.js";
 
 export type TransformersDevice = "auto" | "wasm" | "webgpu";
 export type PoolingStrategy = "mean" | "cls" | "max";
@@ -55,7 +56,7 @@ export const createTransformersJsEmbeddingService = (
   const initializePipeline = async (): Promise<FeatureExtraction> => {
     if (!embeddingPipeline) {
       const deviceCfg = resolveDevice(config.device);
-      console.log(
+      logger.info(
         `Initializing Transformers.js embedding pipeline with model: ${
           config.model
         } (${String(deviceCfg.device)})`
@@ -77,9 +78,9 @@ export const createTransformersJsEmbeddingService = (
           modelDimensions = dims;
         }
       } catch (err) {
-        console.warn(
-          "Transformers.js: could not determine model dimensions; using default",
-          err
+        logger.warn(
+          err,
+          "Transformers.js: could not determine model dimensions; using default"
         );
       }
     }
@@ -160,7 +161,9 @@ export const createTransformersJsEmbeddingService = (
                 normalize: config.normalize,
               });
               const v = to1D(extractArray(r));
-              embeddings.push(v.length ? v : new Array(modelDimensions).fill(0));
+              embeddings.push(
+                v.length ? v : new Array(modelDimensions).fill(0)
+              );
             }
           }
         }
@@ -212,4 +215,3 @@ export const createTransformersJsEmbeddingService = (
     healthCheck,
   };
 };
-

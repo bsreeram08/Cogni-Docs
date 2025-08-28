@@ -11,29 +11,78 @@ import {
 import { getDocumentProcessor } from "../processing/document-processor.js";
 import type { MimeType } from "../types.js";
 import cors from "@elysiajs/cors";
+import { serverTiming } from "@elysiajs/server-timing";
+import { swagger } from "@elysiajs/swagger";
+import { logger } from "../utils/logger.js";
 
 export function registerRoutes(app: Elysia) {
   app
-    .use(cors({ origin: "*" }))
+    .use(
+      cors({
+        origin: "*",
+        allowedHeaders: [
+          "Content-Type",
+          "Accept",
+          "X-Request-Id",
+          "Mcp-Session-Id",
+        ],
+        exposeHeaders: ["X-Request-Id", "Mcp-Session-Id"],
+      })
+    )
+    .use(serverTiming())
+    .use(swagger())
     // Per-request tracing context
-    .derive(({ request, set, path }) => {
+    .derive(({ request, set }) => {
       const headerId = request.headers.get("x-request-id");
       const reqId =
         headerId && headerId.length > 0 ? headerId : crypto.randomUUID();
       const startTime = Date.now();
-      set.headers["x-request-id"] = reqId;
+      // Propagate X-Request-Id on every response
+      set.headers["X-Request-Id"] = reqId;
+      // Ensure CORS allows and exposes tracing/session headers
+      const prevAllow = String(
+        set.headers["Access-Control-Allow-Headers"] ?? ""
+      )
+        .split(",")
+        .map((s) => s.trim())
+        .filter((s) => s.length > 0);
+      const allowSet = new Set([
+        ...prevAllow,
+        "X-Request-Id",
+        "Mcp-Session-Id",
+        "Content-Type",
+        "Accept",
+      ]);
+      set.headers["Access-Control-Allow-Headers"] =
+        Array.from(allowSet).join(", ");
+      const prevExpose = String(
+        set.headers["Access-Control-Expose-Headers"] ?? ""
+      )
+        .split(",")
+        .map((s) => s.trim())
+        .filter((s) => s.length > 0);
+      const exposeSet = new Set([
+        ...prevExpose,
+        "X-Request-Id",
+        "Mcp-Session-Id",
+        "Content-Type",
+        "Accept",
+      ]);
+      set.headers["Access-Control-Expose-Headers"] =
+        Array.from(exposeSet).join(", ");
       return { reqId, startTime } as const;
     })
     // Inbound request log
     .onBeforeHandle(({ request, path, reqId }) => {
-      console.log(`[${reqId}] --> ${request.method} ${path}`);
+      logger.info({ reqId, method: request.method, path }, "inbound");
     })
     // Outbound response log
     .onAfterHandle(({ request, path, set, reqId, startTime }) => {
       const durationMs = Date.now() - startTime;
       const status = typeof set.status === "number" ? set.status : 200;
-      console.log(
-        `[${reqId}] <-- ${request.method} ${path} ${status} ${durationMs}ms`
+      logger.info(
+        { reqId, method: request.method, path, status, durationMs },
+        "outbound"
       );
     })
     // Standardized error logging
@@ -42,10 +91,10 @@ export function registerRoutes(app: Elysia) {
         typeof startTime === "number" ? Date.now() - startTime : 0;
       const message =
         error instanceof Error ? error.message : "Internal server error";
-      console.error(
-        `[${reqId}] [${code}] ${request.method} ${path} ${durationMs}ms - ${message}`
+      logger.error(
+        { reqId, code, method: request.method, path, durationMs, err: error },
+        message
       );
-      if (error instanceof Error && error.stack) console.error(error.stack);
       set.status = 500;
       return { error: message };
     })
@@ -56,8 +105,9 @@ export function registerRoutes(app: Elysia) {
       description: "Model Context Protocol server using Bun and Elysia",
       endpoints: {
         "/": "This info",
-        "/sse": "SSE endpoint for MCP connections",
-        "/messages": "Message endpoint for MCP clients",
+        "/mcp": "POST: MCP JSON-RPC; GET: 405; DELETE: end session",
+        "/sets": "List or create documentation sets",
+        "/sets/:setId/upload": "Upload documents to a set",
       },
     }))
     // Health check endpoint with service status
@@ -128,7 +178,7 @@ export function registerRoutes(app: Elysia) {
           );
           return result;
         } catch (error) {
-          console.error(`[${reqId}] Error creating document set:`, error);
+          logger.error(error, `[${reqId}] Error creating document set:`);
           set.status = 500;
           return { error: "Failed to create document set" };
         }
@@ -233,7 +283,7 @@ export function registerRoutes(app: Elysia) {
           await storageService.deleteDocument(params.setId, params.documentId);
           return { message: "Document deleted successfully" };
         } catch (error) {
-          console.error(`[${reqId}] Error deleting document:`, error);
+          logger.error(error, `[${reqId}] Error deleting document:`);
           set.status = 500;
           return { error: "Failed to delete document" };
         }
@@ -280,7 +330,7 @@ export function registerRoutes(app: Elysia) {
           const results = [];
 
           for (const file of fileArray) {
-            console.log(
+            logger.info(
               `[${reqId}] Processing file: ${file.name}, type: ${file.type}, size: ${file.size}`
             );
 
@@ -307,7 +357,7 @@ export function registerRoutes(app: Elysia) {
                   mimeType = "text/plain";
                   break;
                 default:
-                  console.warn(
+                  logger.warn(
                     `Unknown file type for ${file.name}, treating as text/plain`
                   );
               }
@@ -337,7 +387,7 @@ export function registerRoutes(app: Elysia) {
             results,
           };
         } catch (error) {
-          console.error(`[${reqId}] Upload processing error:`, error);
+          logger.error(error, `[${reqId}] Upload processing error:`);
           set.status = 500;
           return {
             error:
