@@ -73,6 +73,8 @@
     "xenova",
     "elysia",
     "bun",
-    "sse"
+    "sse",
+    "typescript",
+    "CogniDocs"
   ]
 }
